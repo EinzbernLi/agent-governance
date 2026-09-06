@@ -38,7 +38,7 @@ decisions/            # 仅保存真正长期 ADR/decision
 feedback/             # 仅保存显式 opt-in export/其他项目本地派生数据；默认不回传上游
 ```
 
-首次接入的选择**只写入这些既有本地状态**：update mode 写 `GOVERNANCE_LOCK`；local calibration / upstream-export choice 写 `LOCAL_POLICY`；LPRL 继续使用既有独立 module pin/state。禁止为了接入选择再增加 `ADOPTION_PROFILE`、feature-flags/wizard state 或中央项目登记。
+首次接入的选择**只写入这些既有本地状态**：update mode 写 `GOVERNANCE_LOCK`；adopter-local model bindings、local calibration / upstream-export choice 写 `LOCAL_POLICY`；LPRL 继续使用既有独立 module pin/state。禁止为了接入选择再增加 `ADOPTION_PROFILE`、feature-flags/wizard state 或中央项目登记。
 
 当 `GOVERNANCE_LOCK.update_policy.mode=github_native_notify` 时，AI 额外安装：
 
@@ -212,8 +212,9 @@ Owner: “将 <governance repo> 的治理规则接入当前项目”
 -> AI 读取治理仓库
 -> AI 读取目标仓库现有结构/规则
 -> 保留或创建最小 .agent 状态
--> AI 展示并推荐四个真正可选项：
+-> AI 展示并推荐五个真正可选项：
      update discovery: github_native_notify | manual_pinned
+     adopter-local model bindings: keep central defaults | configure Web/Agent pools/preferences
      project-local calibration: enabled | disabled
      anonymized upstream aggregate feedback: disabled(default) | explicit opt-in
      LPRL: disabled(default) | enabled(Preview warning)
@@ -223,7 +224,11 @@ Owner: “将 <governance repo> 的治理规则接入当前项目”
 -> 验证 conformance / cold-start / takeover
 ```
 
-Core Governance 不作为可关闭项；Task/Result/Lead Acceptance、exact-pin anti-drift、安全/权限/独立验证等 Core 不变量也不得变成 onboarding checkbox。Console 是独立 optional tooling，不进入普通接入必问项。
+Core Governance 不作为可关闭项；Task/Result/Lead Acceptance、exact-pin anti-drift、安全/权限/独立验证等 Core 不变量也不得变成 onboarding checkbox。Console 是独立 optional tooling，不进入普通接入必问项。模型绑定也不建立 model manager、provider registry 或第二 routing store；它只是 `LOCAL_POLICY` 中的项目本地选择输入。
+
+AI 可以依据 runtime、中央 registry/calibration/evidence 与项目事实给出初始 Web/Agent pool、default 和 role-preference 建议，但首次写入或 material 变更这些持久化绑定前必须让 Owner 明确确认；不得把推荐自动持久化为项目 authority。
+
+在本 GitHub-native 治理中，Web mode 的前提是 Web execution surface 已确认具备目标 GitHub repository 的 read/write capability；接入时只需确认这一前提一次，不建模 plugin/provider brand。Issue/PR/branch/commit/review，以及消费或触发 repository CI 等 GitHub-native 操作本身不构成 Agent placement 触发条件；只有 Task 实质依赖目标机器上的本地文件、进程、软件、workspace 或 GitHub/remote execution surface 无法访问的其他状态时才要求 Agent。若后续 GitHub access 失效，相关 Web operation 在访问恢复前 BLOCK，不因此创建第二 routing mode。
 
 ### `github_native_notify`
 
@@ -304,6 +309,7 @@ next action
 - high-risk independent validation requirements；
 - project-specific data/state boundaries；
 - 可选 Execution Economy override；
+- adopter-local Web/Agent model pools 与 soft preferences；
 - project-local model calibration enable/disable；
 - explicit anonymized aggregate upstream feedback permission（默认 false；不授权自动发送）；
 - 可选 LPRL mode、root authority 和本地 mutation 边界。
@@ -311,6 +317,48 @@ next action
 不要重复中央通用 dispatch/model/resume/LPRL core rules。
 
 接入/升级治理时，已有 `LOCAL_POLICY` 必须保留；上游只能被显式 compatibility review 证明兼容后更新 pin，不得静默删除、覆盖或弱化项目更严格规则。
+
+### 11.1 Adopter-local Model Bindings
+
+`model_bindings` 只在 `config/DISPATCH_POLICY.yaml` 已经解析 execution surface **之后**参与模型选择。它不能因为模型供应商、价格、tier、上下文能力或偏好，把本应 local/Agent 的任务移到 Web，也不能把 Web/remote-only placement 反向移到 Agent。
+
+```text
+surface pool != placement authority
+local custom eligibility != central qualification
+default/role preference != exact-model pin
+```
+
+项目可在既有 `.agent/LOCAL_POLICY.yaml` 使用以下唯一结构：
+
+```yaml
+model_bindings:
+  web:
+    allowed_models: []
+    default_model: null
+    role_preferences:
+      lead: null
+      worker: null
+      validator: null
+  agent:
+    allowed_models: []
+    default_model: null
+    role_preferences:
+      lead: null
+      worker: null
+      validator: null
+  ai_recommendation_allowed: true
+  initial_or_material_change_requires_owner_confirmation: true
+```
+
+Web 与 Agent pool 是彼此独立的 selection input。`allowed_models: []` 表示没有 adopter-specific pool restriction：中央 registry 中原本合规的模型继续按中央 routing/qualification 选择，但任何非中央模型仍然未声明并在 formal launch 前 `BLOCK`。一旦某个 surface 的 `allowed_models` 非空，最终选择必须位于该 pool 内。
+
+中央 `MODEL_REGISTRY` 是 recommended/validated default catalog，不是所有 adopter 的穷尽 allowlist。中央模型可以直接以 model key 放进 `allowed_models`，不需要复制其 status、role ceiling、benchmark 或 calibration evidence。非中央 custom model 只有在相关 surface pool 中被 Owner 明确声明后才获得该项目、该 surface 的 local eligibility；它不会因此获得中央 `preferred/provisional/candidate` status、跨项目 evidence 或 automatic global promotion。
+
+`default_model` 与 `role_preferences.lead|worker|validator` 都只是 pool 内 ranking/default preference。正常 MODEL_ROUTING、project-local calibration 与 challenger exploration 仍可在同一 surface 的合规 pool 内选择其他模型。只有 explicit exact Task executor/model override 或 explicit Owner instruction 才能为单个 Task 固定 exact model；若 pool 只有一个模型，则普通过滤自然只剩该模型，不需要额外 routing mode。
+
+Startup Card 的 `对话` 值（例如 `新开 Web 对话`、`新开本地 Agent/Codex 对话`）只是面向 Owner 的 placement guidance，不是 surface 或 model authority。canonical renderer 只接受已经解析出的 explicit execution surface 进行 pool/gate validation，不得从 `对话` 文本反推 Web/Agent，也不得在 renderer 内进行 ranking 或 model selection。
+
+AI 可以建议初始 pool/default/role preferences；但 `initial_or_material_change_requires_owner_confirmation: true` 是持久化边界，首次配置或 material 调整都必须由 Owner 确认后才能写入项目 `LOCAL_POLICY`。
 
 ## 12. Model Routing / Calibration
 
@@ -348,7 +396,7 @@ Worker 与 Validator evidence 分开聚合；直接模型归因至少按 role + 
 
 ## 13. Explicit Non-Goals
 
-Natural-language takeover、AI-first informed adoption、project-local calibration 与 LPRL onboarding 不引入：
+Natural-language takeover、AI-first informed adoption、adopter-local model bindings、project-local calibration 与 LPRL onboarding 不引入：
 
 - persistent session database；
 - distributed lock service；
@@ -360,6 +408,7 @@ Natural-language takeover、AI-first informed adoption、project-local calibrati
 - automatic clone/deployment location selection；
 - background filesystem daemon；
 - automatic cleanup/migration；
+- model manager / provider registry / Web router / Agent router；
 - `ADOPTION_PROFILE` / wizard state / feature-management system；
 - central adopter registry；
 - required usage telemetry / phone-home；
@@ -369,7 +418,7 @@ Natural-language takeover、AI-first informed adoption、project-local calibrati
 - automatic governance adoption / pin advancement；
 - project-local calibration auto-promotion into global model qualification。
 
-只使用现有 repo/GitHub durable facts + optional checkpoint + optional lightweight Lead Claim；本地 calibration 只使用项目自己的 durable GitHub facts；本地资源阶段只在 Owner 提供的 exact root 下由具备本地能力的 runtime 执行。
+只使用现有 repo/GitHub durable facts + optional checkpoint + optional lightweight Lead Claim；模型绑定只使用既有 `LOCAL_POLICY`；本地 calibration 只使用项目自己的 durable GitHub facts；本地资源阶段只在 Owner 提供的 exact root 下由具备本地能力的 runtime 执行。
 
 ## 14. Principle
 
@@ -379,6 +428,7 @@ governance source = one configured upstream repository
 GOVERNANCE_LOCK = exact accepted source/version/ref + update mode
 project .agent = minimal project-specific state
 LOCAL_POLICY = downstream-local supplementary rules + local optional choices
+LOCAL_POLICY model_bindings = downstream-local surface model pools/preferences, not placement authority
 GitHub Issue/PR or files = one chosen Task/Result fact source
 informed adoption prompt = presentation, not authority/state
 update detector = downstream-local convenience, not authority

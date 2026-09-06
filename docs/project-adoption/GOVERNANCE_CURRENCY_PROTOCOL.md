@@ -1,6 +1,6 @@
 # Governance Source, Update Discovery & Adoption Protocol
 
-Version: 0.3.10  
+Version: 0.3.11  
 Status: Accepted normative protocol
 
 ## 1. Goal
@@ -19,31 +19,38 @@ From the downstream project's perspective, the configured `governance.repository
 
 ## 2. AI-first informed adoption contract
 
-Normal adoption is AI-first. A Web/Codex/other capable coding agent reads this governance repository and the target repository, derives the minimum required project files, and asks the Owner only about real optional behavior that cannot be inferred safely.
+Normal adoption is AI-first. A Web/Agent/other capable coding agent reads this governance repository and the target repository, derives the minimum required project files, and asks the Owner only about real optional behavior that cannot be inferred safely.
 
-Ordinary governance adoption means **Core Governance is enabled**. Core safety/authority semantics are not decomposed into disable-able feature checkboxes. First adoption presents one thin informed prompt covering only:
+Ordinary governance adoption means **Core Governance is enabled**. Core safety/authority semantics are not decomposed into disable-able feature checkboxes. First adoption presents one thin informed prompt covering only these five bounded optional choices:
 
 ```text
 1. governance update discovery
    - github_native_notify (recommended)
    - manual_pinned
 
-2. project-local model calibration
+2. adopter-local model bindings
+   - confirm the models available on Web and Agent surfaces
+   - optionally choose soft defaults / Lead / Worker / Validator preferences
+   - initial or material persisted changes require Owner confirmation
+
+3. project-local model calibration
    - enabled (recommended when supported)
    - disabled
    - data remains in this project either way
 
-3. anonymized upstream model feedback permission
+4. anonymized upstream model feedback permission
    - disabled (default)
    - enabled for explicit anonymized aggregate export only
    - enabled != automatic delivery
 
-4. optional LPRL
+5. optional LPRL
    - disabled (default)
    - enabled only after repeating Experimental / Preview posture
 ```
 
 Governance Console is separate optional tooling and is not an ordinary adoption question.
+
+For a GitHub-native project, selecting/using Web mode presumes the target Web execution surface has already been confirmed to have the repository read/write capability required by the project. Adoption records no plugin/provider brand and does not build a capability registry. GitHub-native Issue/PR/branch/commit/review work or repository CI use does not, by itself, require Agent placement; later loss of GitHub access is handled as a real capability/permission failure under Dispatch rather than as a second routing mode.
 
 The AI should explain the effect of the recommended profile, let the Owner confirm or change those choices once, and then deploy automatically. This interaction is presentation only:
 
@@ -56,6 +63,7 @@ Choices persist only in existing downstream surfaces:
 
 ```text
 GOVERNANCE_LOCK.update_policy.mode
+LOCAL_POLICY.model_bindings
 LOCAL_POLICY.model_calibration.enabled
 LOCAL_POLICY.model_calibration.upstream_export
 GOVERNANCE_LOCK.modules.lprl + existing LOCAL_POLICY LPRL state when selected
@@ -70,7 +78,7 @@ read governance source
 -> inspect target repository
 -> preserve existing project-local rules
 -> derive one governance source + exact accepted pin
--> present the four bounded optional choices above
+-> present the five bounded optional choices above
 -> Owner confirms once
 -> write/update minimum existing .agent governance state
 -> install only selected existing detector/calibration components
@@ -195,7 +203,7 @@ GOVERNANCE_LOCK
 
 LOCAL_POLICY
   = project-specific protected paths, tests, domain constraints,
-    risk rules, local-resource boundaries and local calibration/export choices
+    risk rules, local-resource boundaries, model bindings and local calibration/export choices
 
 Task
   = bounded task-specific scope/authorization
@@ -302,7 +310,9 @@ Accepted upstream source ref/version remains the release authority; the downstre
 
 ## 11. Acceptance cases
 
-- AI-first first adoption -> presents the four bounded optional choices, then writes only existing downstream authority/state surfaces.
+- AI-first first adoption -> presents the five bounded optional choices, then writes only existing downstream authority/state surfaces.
+- adopter-local model bindings -> persisted only in existing `LOCAL_POLICY`; surface pools constrain model selection after surface resolution, defaults/preferences are not pins, and initial/material changes require Owner confirmation.
+- Web mode eligibility -> target GitHub repository read/write is confirmed at adoption/use; no plugin/provider brand is persisted; GitHub-native work alone is not an Agent placement trigger.
 - Core adoption -> does not offer safety/Task/Acceptance/anti-drift invariants as disable-able feature flags.
 - project-local calibration -> explicit first-adoption choice; if disabled, routing falls back to governance/global priors without weakening Task authority.
 - upstream model feedback -> disabled by default; enabling permits explicit anonymized aggregate export only and never automatic cross-repository delivery.

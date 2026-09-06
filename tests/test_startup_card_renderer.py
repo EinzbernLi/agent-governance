@@ -2,6 +2,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 from pathlib import Path
@@ -9,6 +10,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "templates" / "STARTUP_CARD_RENDER.py"
+DEFAULT_LOCAL_POLICY = REPO / "templates" / "LOCAL_POLICY.yaml"
 SPEC = importlib.util.spec_from_file_location("startup_card_render", SCRIPT)
 RENDERER = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(RENDERER)
@@ -40,9 +42,75 @@ class StartupCardRendererTests(unittest.TestCase):
             "reasoning": "high",
             "conversation": "current-session",
             "routing_decision": self.decision(),
+            "execution_surface": "web",
+            "local_policy_path": DEFAULT_LOCAL_POLICY,
         }
         values.update(overrides)
         return RENDERER.render_startup_card(**values)
+
+    def local_policy(
+        self,
+        *,
+        web_models=(),
+        agent_models=(),
+        web_default=None,
+        agent_default=None,
+        web_roles=None,
+        agent_roles=None,
+        ai_recommendation_allowed=True,
+        owner_confirmation=True,
+    ):
+        web_roles = web_roles or {}
+        agent_roles = agent_roles or {}
+
+        def encoded_list(values):
+            return "[" + ", ".join(json.dumps(value) for value in values) + "]"
+
+        def scalar(value):
+            return "null" if value is None else json.dumps(value)
+
+        tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tempdir.cleanup)
+        path = Path(tempdir.name) / "LOCAL_POLICY.yaml"
+        path.write_text(
+            "\n".join(
+                [
+                    'schema_version: "0.4"',
+                    'project_name: "test"',
+                    "model_bindings:",
+                    "  web:",
+                    f"    allowed_models: {encoded_list(web_models)}",
+                    f"    default_model: {scalar(web_default)}",
+                    "    role_preferences:",
+                    f"      lead: {scalar(web_roles.get('lead'))}",
+                    f"      worker: {scalar(web_roles.get('worker'))}",
+                    f"      validator: {scalar(web_roles.get('validator'))}",
+                    "  agent:",
+                    f"    allowed_models: {encoded_list(agent_models)}",
+                    f"    default_model: {scalar(agent_default)}",
+                    "    role_preferences:",
+                    f"      lead: {scalar(agent_roles.get('lead'))}",
+                    f"      worker: {scalar(agent_roles.get('worker'))}",
+                    f"      validator: {scalar(agent_roles.get('validator'))}",
+                    f"  ai_recommendation_allowed: {str(ai_recommendation_allowed).lower()}",
+                    "  initial_or_material_change_requires_owner_confirmation: "
+                    f"{str(owner_confirmation).lower()}",
+                    "",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return path
+
+    @staticmethod
+    def no_challenger(decision):
+        return {
+            **decision,
+            "challenger_disposition": "not_applicable",
+            "challenger_model": None,
+            "challenger_evidence_strength": None,
+            "challenger_defer_reason": None,
+        }
 
     def test_valid_task_ref_and_display_order_are_deterministic(self):
         first = self.render(route="current_session", profile="balanced")
@@ -188,6 +256,19 @@ class StartupCardRendererTests(unittest.TestCase):
         )
         self.assertIn("模型: model", probe)
 
+    def test_formal_launch_requires_explicit_surface_and_project_local_policy(self):
+        with self.assertRaisesRegex(ValueError, "explicit already-resolved execution_surface"):
+            self.render(execution_surface=None)
+        with self.assertRaisesRegex(ValueError, "explicit project LOCAL_POLICY"):
+            self.render(local_policy_path=None)
+
+        tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tempdir.cleanup)
+        missing_bindings = Path(tempdir.name) / "LOCAL_POLICY.yaml"
+        missing_bindings.write_text('schema_version: "0.4"\nproject_name: "test"\n', encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "model_bindings section is required"):
+            self.render(local_policy_path=missing_bindings)
+
     def test_routing_decision_binds_model_reasoning_and_registry_ceiling(self):
         with self.assertRaises(ValueError):
             self.render(reasoning="medium")
@@ -226,6 +307,144 @@ class StartupCardRendererTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.render(routing_decision=self.decision(challenger_defer_reason="prefer_incumbent"))
 
+    def test_central_registered_model_launch_remains_conformant_with_empty_project_pool(self):
+        rendered = self.render(conversation="新开 Web 对话")
+        self.assertIn("模型: gpt-5.6-luna", rendered)
+        self.assertIn("对话: 新开 Web 对话", rendered)
+
+    def test_declared_local_custom_model_passes_without_central_registry_entry(self):
+        custom_model = "owner-custom-worker-v1"
+        self.assertNotIn(custom_model + ":", (REPO / "config" / "MODEL_REGISTRY.yaml").read_text(encoding="utf-8"))
+        policy = self.local_policy(agent_models=[custom_model])
+        decision = self.no_challenger(self.decision(selected_model=custom_model))
+        rendered = self.render(
+            model=custom_model,
+            routing_decision=decision,
+            execution_surface="agent",
+            local_policy_path=policy,
+            conversation="新开本地 Agent/Codex 对话",
+        )
+        self.assertIn(f"模型: {custom_model}", rendered)
+        self.assertNotIn("preferred", rendered)
+        self.assertNotIn("provisional", rendered)
+        self.assertNotIn("candidate", rendered)
+
+    def test_undeclared_noncentral_model_fails_closed(self):
+        custom_model = "undeclared-custom-v1"
+        decision = self.no_challenger(self.decision(selected_model=custom_model))
+        with self.assertRaisesRegex(ValueError, "undeclared non-central"):
+            self.render(model=custom_model, routing_decision=decision)
+
+    def test_configured_surface_pool_blocks_out_of_pool_central_model(self):
+        policy = self.local_policy(web_models=["gpt-5.6-luna"])
+        sol_decision = self.no_challenger(self.decision(
+            role="core_implementation",
+            task_class="core_implementation",
+            risk_level="high",
+            selected_model="gpt-5.6-sol",
+        ))
+        with self.assertRaisesRegex(ValueError, "outside the configured execution-surface pool"):
+            self.render(
+                model="gpt-5.6-sol",
+                routing_decision=sol_decision,
+                execution_surface="web",
+                local_policy_path=policy,
+            )
+
+    def test_surface_is_explicit_and_never_inferred_from_conversation_display(self):
+        custom_model = "owner-agent-only-v1"
+        policy = self.local_policy(web_models=["gpt-5.6-luna"], agent_models=[custom_model])
+        decision = self.no_challenger(self.decision(selected_model=custom_model))
+        rendered = self.render(
+            model=custom_model,
+            routing_decision=decision,
+            execution_surface="agent",
+            local_policy_path=policy,
+            conversation="新开 Web 对话",
+        )
+        self.assertIn("对话: 新开 Web 对话", rendered)
+        with self.assertRaisesRegex(ValueError, "outside the configured execution-surface pool"):
+            self.render(
+                model=custom_model,
+                routing_decision=decision,
+                execution_surface="web",
+                local_policy_path=policy,
+                conversation="新开本地 Agent/Codex 对话",
+            )
+        with self.assertRaisesRegex(ValueError, "explicit already-resolved execution_surface"):
+            self.render(
+                model=custom_model,
+                routing_decision=decision,
+                execution_surface=None,
+                local_policy_path=policy,
+                conversation="新开本地 Agent/Codex 对话",
+            )
+
+    def test_one_model_web_pool_needs_no_special_routing_mode(self):
+        policy = self.local_policy(web_models=["gpt-5.6-luna"])
+        decision = self.no_challenger(self.decision())
+        first = self.render(
+            routing_decision=decision,
+            execution_surface="web",
+            local_policy_path=policy,
+            route="external_owner_launch",
+        )
+        second = self.render(
+            routing_decision=decision,
+            execution_surface="web",
+            local_policy_path=policy,
+            route="current_session",
+        )
+        self.assertEqual(first, second)
+        self.assertIn("模型: gpt-5.6-luna", first)
+
+    def test_multi_model_agent_pool_preferences_are_not_hard_pins(self):
+        custom_model = "owner-custom-agent-v2"
+        policy = self.local_policy(
+            agent_models=["gpt-5.6-luna", custom_model],
+            agent_default=custom_model,
+            agent_roles={"worker": custom_model},
+        )
+        central_decision = self.no_challenger(self.decision())
+        central = self.render(
+            routing_decision=central_decision,
+            execution_surface="agent",
+            local_policy_path=policy,
+        )
+        custom_decision = self.no_challenger(self.decision(selected_model=custom_model))
+        custom = self.render(
+            model=custom_model,
+            routing_decision=custom_decision,
+            execution_surface="agent",
+            local_policy_path=policy,
+        )
+        self.assertIn("模型: gpt-5.6-luna", central)
+        self.assertIn(f"模型: {custom_model}", custom)
+
+    def test_local_policy_rejects_preference_outside_nonempty_pool_and_owner_confirmation_false(self):
+        outside = self.local_policy(
+            web_models=["gpt-5.6-luna"],
+            web_default="gpt-5.6-sol",
+        )
+        decision = self.no_challenger(self.decision())
+        with self.assertRaisesRegex(ValueError, "preference is outside allowed_models"):
+            self.render(
+                routing_decision=decision,
+                execution_surface="web",
+                local_policy_path=outside,
+            )
+
+        unconfirmed = self.local_policy(
+            web_models=["gpt-5.6-luna"],
+            owner_confirmation=False,
+        )
+        with self.assertRaisesRegex(ValueError, "must require Owner confirmation"):
+            self.render(
+                routing_decision=decision,
+                execution_surface="web",
+                local_policy_path=unconfirmed,
+            )
+
     def test_pre_freeze_regression_reuses_existing_routing_gate_for_182_v1(self):
         valid = {
             "role": "independent_evidence_validator",
@@ -243,6 +462,8 @@ class StartupCardRendererTests(unittest.TestCase):
             valid,
             model="gemini-3.7-flash",
             reasoning="high",
+            execution_surface="web",
+            local_policy_path=DEFAULT_LOCAL_POLICY,
         )
 
         malformed_v1 = {
@@ -257,6 +478,8 @@ class StartupCardRendererTests(unittest.TestCase):
                 malformed_v1,
                 model="gemini-3.7-flash",
                 reasoning="high",
+                execution_surface="web",
+                local_policy_path=DEFAULT_LOCAL_POLICY,
             )
 
     def test_non_owner_launch_surfaces_delegate_to_canonical_renderer(self):
@@ -293,6 +516,12 @@ class StartupCardRendererTests(unittest.TestCase):
         for forbidden in ("import socket", "import urllib", "import requests", "urlopen("):
             self.assertNotIn(forbidden, source)
         decision = json.dumps(self.decision(), separators=(",", ":"))
+        common = [
+            "--execution-surface",
+            "web",
+            "--local-policy",
+            str(DEFAULT_LOCAL_POLICY),
+        ]
         success = subprocess.run(
             [
                 sys.executable,
@@ -307,6 +536,7 @@ class StartupCardRendererTests(unittest.TestCase):
                 "session",
                 "--routing-decision-json",
                 decision,
+                *common,
             ],
             check=False,
             capture_output=True,
@@ -328,6 +558,7 @@ class StartupCardRendererTests(unittest.TestCase):
                 "session",
                 "--routing-decision-json",
                 decision,
+                *common,
             ],
             check=False,
             capture_output=True,

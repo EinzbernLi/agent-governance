@@ -41,6 +41,32 @@ execution_economy:
   may_weaken_independent_validation: false
   may_trigger_owner_relay_for_quota_only_when_direct_compliant: false
 
+# 可选的 downstream-local model pools。execution surface 必须先由中央 Dispatch Policy 解析；
+# 本节只约束该已解析 surface 内的模型资格/偏好，不能改变 Web/Agent placement。
+# allowed_models 为空表示未配置 adopter-specific pool：中央 registry 模型继续按中央 routing/qualification 规则选择，
+# 但任何非中央模型仍为 undeclared 并 BLOCK。allowed_models 非空时，该 surface 的最终选择必须在池内。
+# 中央模型可直接写 model key，无需复制中央 status/evidence；非中央 model key 只有本地 Owner 授权资格，
+# 不获得中央 preferred/provisional/candidate status、跨项目 evidence 或自动 promotion。
+# default_model / role_preferences 只是 ranking/default preference，不是 exact-model pin；
+# 只有明确 Task executor/model override 或 Owner 指令可固定单个 Task 的 exact model。
+model_bindings:
+  web:
+    allowed_models: []
+    default_model: null
+    role_preferences:
+      lead: null
+      worker: null
+      validator: null
+  agent:
+    allowed_models: []
+    default_model: null
+    role_preferences:
+      lead: null
+      worker: null
+      validator: null
+  ai_recommendation_allowed: true
+  initial_or_material_change_requires_owner_confirmation: true
+
 # Project-local model calibration is derived, local-only routing evidence.
 # First adoption presents this as a real optional choice before deployment.
 # Existing project policy, an explicit Owner choice, or unavailable GitHub Actions always wins.
