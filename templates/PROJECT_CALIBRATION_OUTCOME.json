@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "task_ref": "github:owner/repo#123@comment-or-task-revision",
+  "revision": 1,
+  "terminal": true,
+  "task_class": "bounded_code_edit",
+  "risk_level": "medium",
+  "accepted_at": "2026-08-30T00:00:00Z",
+  "samples": [
+    {
+      "role": "bounded_worker",
+      "attribution": "assigned_executor",
+      "model_id": "model-id",
+      "model_semantic_key": "model-id@semantic-revision",
+      "reasoning_semantic_key": "model-id:reasoning-profile@semantic-revision",
+      "rework_count": 0,
+      "execution": {
+        "dispatch_route": "current_session",
+        "runtime_profile": "web_interactive"
+      },
+      "worker_outcome": {
+        "accepted_first_pass": true,
+        "final_accepted": true,
+        "tests_passed": true,
+        "scope_violation": false,
+        "permission_violation": false,
+        "safety_violation": false
+      },
+      "efficiency": {
+        "latency_bucket": null,
+        "cost_bucket": null
+      }
+    },
+    {
+      "role": "validator",
+      "attribution": "assigned_executor",
+      "model_id": "validator-model-id",
+      "model_semantic_key": "validator-model-id@semantic-revision",
+      "reasoning_semantic_key": "validator-model-id:reasoning-profile@semantic-revision",
+      "rework_count": 0,
+      "execution": {
+        "dispatch_route": "external_owner_launch",
+        "runtime_profile": "web_interactive"
+      },
+      "validator_outcome": {
+        "review_completed": true,
+        "material_findings_confirmed": 0,
+        "false_positive_confirmed": null,
+        "missed_defect_confirmed": null
+      },
+      "efficiency": {
+        "latency_bucket": null,
+        "cost_bucket": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,336 @@
+schema_version: "0.2"
+policy_id: governance-conformance-v2
+authority_model: accepted_facts_evaluated_read_only
+
+status:
+  overall: [CONFORMANT, RECONCILIATION_REQUIRED, BLOCKED]
+  internal_drift: [CONFORMANT, DRIFT_RECONCILABLE, DRIFT_BLOCKING]
+  local_action: [ALLOW, BLOCK]
+  update_available_changes_status: false
+
+central_governance:
+  ordinary_version: "0.3.16"
+  release_schema: "1.0"
+  change_class: drift_prevention_runtime_profiles_and_authority_surface_consolidation
+  version_path: VERSION
+  release_path: GOVERNANCE_RELEASE.yaml
+  required_paths:
+    - README.md
+    - VERSION
+    - GOVERNANCE_RELEASE.yaml
+    - config/CONFORMANCE_POLICY.yaml
+    - config/DISPATCH_POLICY.yaml
+    - config/MODEL_ROUTING.yaml
+    - docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+    - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+    - docs/task-package/TASK_PACKAGE_SPEC.md
+    - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+    - docs/protocol/AGENT_COORDINATION_PROTOCOL.md
+    - docs/protocol/DISPATCH_ROUTING_PROTOCOL.md
+    - docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md
+    - docs/project-adoption/PROJECT_ADOPTION.md
+    - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+    - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+    - templates/GOVERNANCE_LOCK.yaml
+    - templates/LOCAL_POLICY.yaml
+    - templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+    - templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+    - templates/GOVERNANCE_CONFORMANCE_CHECK.py
+    - templates/RESULT.md
+    - tests/test_governance_conformance.py
+  required_markers:
+    config/DISPATCH_POLICY.yaml:
+      - "bounded_worker_internal_delegation_default_without_runtime_or_task_policy: false"
+      - "codex_worker_internal_delegation_default_allowed: true"
+      - "while_child_running_no_substantive_progress_inspection: true"
+      - "terminal_handoff_required_before_result_read: true"
+      - "mode: delta_only"
+      - "capability_probe_outranks_profile_or_client_label: true"
+      - "policy: codex_required_by_default"
+      - "policy: web_preferred"
+      - "parallel_child_writes_require_pairwise_disjoint_scope: true"
+      - "child_review_counts_as_independent_validation: false"
+    docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
+      - AWAIT_OWNER_CONTINUE
+      - later explicit Owner
+    docs/task-package/TASK_PACKAGE_SPEC.md:
+      - stable copy-oriented
+      - editable drafting surface
+      - "startup_card_display_fields: [模型, 思考等级, 对话]"
+      - "standard_launcher_semantic_lines: 3"
+    docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md:
+      - conformance Result
+      - independent validation
+    docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md:
+      - fresh takeover or reconciliation
+      - new Task activation
+      - governance adoption or update
+      - independent-module repin
+      - before local deploy, migrate or retire
+      - before release acceptance
+      - after material topology change
+    README.md:
+      - "navigation and onboarding; it is not a normative protocol"
+    docs/protocol/DISPATCH_ROUTING_PROTOCOL.md:
+      - "non-authoritative reference guide"
+    docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md:
+      - "non-authoritative principles appendix"
+  accepted_0_3_14_replay:
+    ordinary_version: "0.3.14"
+    release_schema: "0.8"
+    change_class: native_dispatch_accountability_and_observation_discipline
+    required_paths:
+      - README.md
+      - VERSION
+      - GOVERNANCE_RELEASE.yaml
+      - config/DISPATCH_POLICY.yaml
+      - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+      - docs/task-package/TASK_PACKAGE_SPEC.md
+      - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+      - docs/project-adoption/PROJECT_ADOPTION.md
+      - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+      - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+      - templates/GOVERNANCE_LOCK.yaml
+      - templates/LOCAL_POLICY.yaml
+    required_markers:
+      config/DISPATCH_POLICY.yaml:
+        - "bounded_worker_internal_delegation_allowed: false"
+        - "while_child_running_no_substantive_progress_inspection: true"
+        - "terminal_handoff_required_before_result_read: true"
+      docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
+        - AWAIT_OWNER_CONTINUE
+        - later explicit Owner
+  accepted_0_3_15_replay:
+    ordinary_version: "0.3.15"
+    release_schema: "0.9"
+    change_class: project_governance_conformance_and_local_deployment_enforcement
+    required_paths:
+      - README.md
+      - VERSION
+      - GOVERNANCE_RELEASE.yaml
+      - config/CONFORMANCE_POLICY.yaml
+      - config/DISPATCH_POLICY.yaml
+      - docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+      - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+      - docs/task-package/TASK_PACKAGE_SPEC.md
+      - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+      - docs/project-adoption/PROJECT_ADOPTION.md
+      - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+      - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+      - templates/GOVERNANCE_LOCK.yaml
+      - templates/LOCAL_POLICY.yaml
+      - templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+      - templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+      - templates/GOVERNANCE_CONFORMANCE_CHECK.py
+      - tests/test_governance_conformance.py
+    required_markers:
+      config/DISPATCH_POLICY.yaml:
+        - "bounded_worker_internal_delegation_allowed: false"
+        - "while_child_running_no_substantive_progress_inspection: true"
+        - "terminal_handoff_required_before_result_read: true"
+      docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
+        - AWAIT_OWNER_CONTINUE
+        - later explicit Owner
+      docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md:
+        - derived evidence
+        - ALLOW != action execution
+
+semantic_authority:
+  owners:
+    lead_continuity_and_takeover: docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+    task_objective_scope_permissions_evidence_tests_result_contract: docs/task-package/TASK_PACKAGE_SPEC.md
+    dispatch_execution_economy_capability_route_and_delegated_observation: config/DISPATCH_POLICY.yaml
+    runtime_profile_deltas: config/DISPATCH_POLICY.yaml
+    worker_validator_role_coordination_and_parallel_role_boundaries: docs/protocol/AGENT_COORDINATION_PROTOCOL.md
+    model_qualification_and_routing: config/MODEL_ROUTING.yaml
+    lead_acceptance_and_independent_validation_disposition: docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+    governance_currency_and_adoption: docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+    conformance_and_local_action_evaluation_meaning: docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+    local_action_authority: durable_task_plus_local_policy_plus_current_topology_and_applicable_lprl
+    lprl_independent_module_lifecycle: modules/local-resource-lifecycle
+    formal_launcher_presentation: docs/task-package/TASK_PACKAGE_SPEC.md
+    release_identity_and_compatibility_metadata: VERSION_plus_GOVERNANCE_RELEASE.yaml
+  surface_roles:
+    README.md: navigation_onboarding_non_authoritative
+    config/CONFORMANCE_POLICY.yaml: derived_verification_pointer_map_only
+    docs/protocol/DISPATCH_ROUTING_PROTOCOL.md: non_authoritative_reference_guide
+    docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md: non_authoritative_principles_appendix
+
+shared_kernel:
+  implementation: references_to_canonical_owners_only
+  invariants:
+    - github_repository_durable_authority
+    - one_active_lead_per_project
+    - task_scope_permission_boundaries
+    - owner_control_gates
+    - safety_and_fail_closed_behavior
+    - result_independent_validation_and_final_acceptance_boundaries
+    - takeover_activation_reconciliation_and_AWAIT_OWNER_CONTINUE
+    - accepted_governance_and_module_currency
+    - no_second_authority_store
+  forbidden_contents:
+    - runtime_execution_preferences
+    - client_presentation_details
+    - optional_lprl_rule_body
+    - local_action_specific_procedure
+    - release_only_procedure
+
+runtime_override_boundary:
+  allowlist:
+    - execution_economy_profile
+    - direct_vs_delegate_preference_among_already_compliant_choices
+    - delegable_preparation_preference
+    - wait_or_transport_preference
+    - launcher_presentation_hint
+  forbidden:
+    - task_authority_or_scope
+    - owner_authorization_or_continue_requirements
+    - permissions
+    - safety_or_fail_closed_behavior
+    - lead_identity_or_uniqueness
+    - result_validator_or_acceptance_authority
+    - independent_validation_requirement
+    - takeover_AWAIT_OWNER_CONTINUE
+    - governance_or_module_pin_authority
+    - conformance_result_meaning
+  unknown_or_forbidden_override_action: fail_closed
+
+cold_path_manifest:
+  mode: deterministic_references_not_dynamic_loader
+  triggers_from_durable_facts_only: true
+  categories:
+    takeover_recovery:
+      trigger: takeover_or_recovery
+      owner: docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+    conformance:
+      trigger: accepted_bounded_conformance_gate
+      owner: docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+    local_action:
+      trigger: explicit_local_action_request
+      owner: docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+    lprl:
+      trigger: accepted_lprl_pin_and_task_requires_lprl_semantics
+      owner: modules/local-resource-lifecycle
+    independent_validator:
+      trigger: task_requires_independent_validation
+      owner: docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+    release_acceptance:
+      trigger: governance_release_or_currency_relevant_acceptance
+      owner: docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+  dynamic_loader_registry_or_daemon_allowed: false
+
+durable_authority_precedence:
+  required_order:
+    - accepted_main_and_release_baseline
+    - canonical_lead_sink_continuity
+    - exact_frozen_task_revision
+    - protected_or_forbidden_older_work_excluded
+  semantic_role_plus_exact_revision_not_latest_comment_wins: true
+  later_exact_frozen_task_beats_stale_proposal_body: true
+  protected_open_work_is_not_resume_target_by_openness: true
+  takeover_terminal_state_after_recommendation: AWAIT_OWNER_CONTINUE
+  replay_fixture:
+    accepted_main_present: true
+    canonical_lead_sink_present: true
+    stale_proposal_body_present: true
+    later_exact_frozen_task_present: true
+    protected_older_open_work_present: true
+    selected_authority_role: exact_frozen_task_revision
+    protected_older_open_work_selected: false
+
+simplicity:
+  baseline_hot_path_required_surfaces: 4
+  baseline_hot_path_required_bytes: 46772
+  candidate_hot_path_surfaces:
+    - config/DISPATCH_POLICY.yaml
+    - templates/RESULT.md
+    - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+  candidate_hot_path_byte_measurement: committed_repository_blob_bytes_for_declared_hot_path_surfaces
+  candidate_hot_path_required_surfaces_max: 3
+  candidate_hot_path_required_bytes_max: 30000
+  material_normative_semantics_with_multiple_owners_max: 0
+  runtime_profiles_containing_full_core_copies_max: 0
+  collapsed_surfaces:
+    - README.md
+    - docs/protocol/DISPATCH_ROUTING_PROTOCOL.md
+    - docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md
+    - docs/task-package/TASK_PACKAGE_SPEC.md
+    - docs/protocol/AGENT_COORDINATION_PROTOCOL.md
+    - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+  current_tree_retired_or_collapsed_surfaces_min: 3
+  net_authority_surface: decrease
+
+independent_modules:
+  lprl:
+    release_key: lprl
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+    independent_pin_required: true
+    silent_repin_forbidden: true
+
+downstream_project:
+  lock_schema_versions: ["0.6"]
+  local_policy_schema_versions: ["0.4"]
+  required_durable_refs: [lead_ref, lead_digest, task_ref, task_digest, project_state_digest]
+  copied_central_semantics_may_weaken: false
+  automatic_pin_advance_allowed: false
+  auto_follow_main_allowed: false
+
+local_action:
+  resource_types: [Source, Workspace, Deployment, State, Data, Evidence, Cache]
+  actions: [create, reuse, modify, migrate, retire]
+  accepted_root_sources: [owner_supplied, owner_confirmed]
+  guessed_root_sources: [cwd, HOME, TEMP, repository_name, historical_path, adjacent_directory, inferred]
+  decision_is_derived: true
+  evaluator_performs_action: false
+
+drift_triggers:
+  - fresh_takeover_or_reconciliation
+  - new_task_activation
+  - governance_adoption_or_update
+  - independent_module_repin
+  - before_local_deploy_migrate_or_retire
+  - before_release_acceptance
+  - after_material_topology_change
+
+side_effects:
+  network_calls_allowed: false
+  authority_writes_allowed: false
+  filesystem_mutation_allowed: false
+  project_discovery_allowed: false
+  automatic_quarantine_or_cleanup_allowed: false
+  central_registry_allowed: false
+  telemetry_or_phone_home_allowed: false
+
+presentation:
+  canonical_owner: docs/task-package/TASK_PACKAGE_SPEC.md
+  startup_card_display_fields: [模型, 思考等级, 对话]
+  additional_formal_card_fields_allowed: false
+  internal_reasoning_profile_in_native_thinking_field_allowed: false
+  fenced_text_blocks: 1
+  activation_pointer_only: true
+  durable_task_details_in_launcher_allowed: false
+  standard_launcher_semantic_lines: 3
+  line_breaks_change_semantics: false
+  malformed_replay_expected: REVISE_REQUIRED
+  conformant_replay_expected: PASS
+  durable_task_remains_authority: true
+
+maximum_write_surface:
+  - config/DISPATCH_POLICY.yaml
+  - config/CONFORMANCE_POLICY.yaml
+  - docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+  - templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+  - templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+  - templates/GOVERNANCE_CONFORMANCE_CHECK.py
+  - tests/test_governance_conformance.py
+  - README.md
+  - VERSION
+  - GOVERNANCE_RELEASE.yaml
+  - CHANGELOG.md
+  - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+  - docs/task-package/TASK_PACKAGE_SPEC.md
+  - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+  - docs/protocol/AGENT_COORDINATION_PROTOCOL.md
+  - docs/protocol/DISPATCH_ROUTING_PROTOCOL.md
+  - docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md

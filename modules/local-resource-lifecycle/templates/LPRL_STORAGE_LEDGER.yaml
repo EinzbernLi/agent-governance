@@ -1,0 +1,57 @@
+schema_version: "0.2.4-pilot"
+ledger_id: "storage-ledger-000"
+ledger_status: draft # draft|measured|validated|invalidated
+
+measurement:
+  measurement_digest: null # lprl-cjson-v1 / storage_measurement; excludes this field
+  scan_scope: []
+  scan_coverage: unknown
+  method: null
+  measurement_basis: unknown # apparent_only|exclusive_physical|mixed|unknown
+  measured_at: null
+
+objects:
+  - storage_object_id: "storage-object-000"
+    physical_location_ref: null
+    resource_refs: []
+    component_refs: []
+    apparent_bytes: null
+    exclusive_physical_bytes: null
+    shared_physical_bytes: null
+    shared_owners: []
+    hardlink_or_reparse_status: UNKNOWN
+    shared_git_object_status: UNKNOWN
+    measurement_confidence: unknown # unknown|low|medium|high|verified
+    notes: null
+
+measurement_summary:
+  apparent_total_bytes: null
+  exclusive_measured_bytes: null
+  shared_measured_bytes: null
+  candidate_envelope_bytes: null
+  candidate_envelope_is_reclaimable: false
+  unknown_or_unmeasured_bytes: null
+
+derived_reclaimable:
+  control_snapshot_ref: null
+  control_snapshot_digest: null
+  gate_bundle_refs: []
+  contributing_storage_object_ids: []
+  currently_safe_reclaimable_bytes: null
+  derivation_ref: null
+  derivation_digest: null # lprl-cjson-v1 / storage_derivation_inputs; excludes this field
+  derived_at: null # excluded post-validation timestamp for derivation digest
+
+validation:
+  rules_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+  measurement_validation_result_ref: null # validates storage_measurement facts
+  derivation_validation_result_ref: null # sole canonical storage_derivation Validation Result link
+
+rules:
+  - "measurement.measurement_basis and objects[].measurement_confidence are independent facts; never encode basis in confidence."
+  - "Control Snapshot binds measurement.measurement_digest, not post-Gate derived_reclaimable fields."
+  - "contributing_storage_object_ids must equal validation_result.resolved_scope.storage_object_ids."
+  - "Do not sum overlapping apparent sizes into reclaimable bytes."
+  - "Shared bytes contribute only when every scoped owner is releasable under the same frozen snapshot."
+  - "Only Gate Bundles passing GATE_BUNDLE_PASS with high/verified measurements contribute."
+  - "currently_safe_reclaimable_bytes is derived output and has no manual override."

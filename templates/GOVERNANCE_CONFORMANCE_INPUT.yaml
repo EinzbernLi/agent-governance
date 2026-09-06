@@ -1,0 +1,61 @@
+schema_version: "0.2"
+mode: central_governance
+central_profile: current_candidate
+
+# The CLI --root argument is mandatory. This file never selects or discovers a root.
+# Runtime-profile, semantic-owner, cold-path, precedence and presentation
+# contracts are read from the exact candidate policy/owners, not caller claims.
+expected_identity:
+  commit: null
+  tree: null
+
+# downstream_project mode additionally supplies these fields. Values are examples,
+# not accepted authority and must be replaced by exact project facts.
+project:
+  name: null
+  root: null
+  root_source: owner_supplied
+  governance_lock_path: .agent/GOVERNANCE_LOCK.yaml
+  local_policy_path: .agent/LOCAL_POLICY.yaml
+  project_state_path: .agent/PROJECT_STATE.md
+
+durable_facts:
+  lead_ref: null
+  lead_digest: null
+  task_ref: null
+  task_digest: null
+  lead_current: false
+  task_current: false
+  project_state_digest: null
+  topology_digest: null
+  topology_facts_current: false
+  copied_governance_semantics_weakened: false
+  accepted_governance_pin: null
+  governance_pin_valid: false
+  accepted_module_pin: null
+  module_compatible: false
+  update_available: false
+
+# Omit local_action when no local action is being evaluated. The decision is output.
+local_action:
+  project: null
+  task_ref: null
+  resource_type: Workspace
+  action: reuse
+  authority:
+    governance_pin_valid: false
+    local_policy_valid: false
+    task_authorized: false
+    action_specific_authorization: false
+  root:
+    path: null
+    source: owner_supplied
+    owner_supplied_or_confirmed: false
+    verified: false
+    within_boundary: false
+  topology:
+    facts_current: false
+    resource_class_known: false
+    shared_resource: false
+    protected_runtime: false
+    owner_set_complete: false

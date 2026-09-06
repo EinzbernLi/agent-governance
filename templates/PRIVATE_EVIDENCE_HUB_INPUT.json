@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "hub": {
+    "enabled": true,
+    "source_repositories": [
+      "owner/private-project-a",
+      "owner/private-project-b"
+    ]
+  },
+  "project_states": [
+    {
+      "repository": "owner/private-project-a",
+      "state": {
+        "schema_version": "1.0",
+        "repository_scope": "same_repository_only",
+        "usable_for_routing": true,
+        "authority": {
+          "derived_cache_only": true,
+          "task_result_validation_acceptance_remain_authoritative": true
+        },
+        "scan": {
+          "complete": true
+        },
+        "model_groups": [],
+        "strategy_groups": []
+      }
+    },
+    {
+      "repository": "owner/private-project-b",
+      "state": {
+        "schema_version": "1.0",
+        "repository_scope": "same_repository_only",
+        "usable_for_routing": true,
+        "authority": {
+          "derived_cache_only": true,
+          "task_result_validation_acceptance_remain_authoritative": true
+        },
+        "scan": {
+          "complete": true
+        },
+        "model_groups": [],
+        "strategy_groups": []
+      }
+    }
+  ]
+}

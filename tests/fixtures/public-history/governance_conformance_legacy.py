@@ -1,0 +1,1163 @@
+import copy
+import hashlib
+import importlib.util
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import tarfile
+import unittest
+from pathlib import Path
+
+
+REPO = Path(__file__).resolve().parents[1]
+SCRIPT = REPO / "templates" / "GOVERNANCE_CONFORMANCE_CHECK.py"
+POLICY = REPO / "config" / "CONFORMANCE_POLICY.yaml"
+FROZEN_BASELINE_TREE = "1f41343ec5d2348cd3ef645230647c25fdd7b969"
+ACCEPTED_0_3_14_COMMIT = "db193e1ae6f5c92f512034444354549581c0b843"
+ACCEPTED_0_3_15_COMMIT = "971458bfe2bde2963edac2bc33862ecc3b83999c"
+ACCEPTED_0_3_15_TREE = "a6ab6f195b9c780e9ca36d1149a0252843602473"
+ACCEPTED_0_3_16_COMMIT = "78f2936dec3185b76fe5b46a6e4e59d0f3751f41"
+ACCEPTED_0_3_16_TREE = "2bdb916aae6b5f7bad85fb2c578448ab427cbff3"
+FROZEN_BASELINE_HOT_PATHS = (
+    "config/DISPATCH_POLICY.yaml",
+    "docs/protocol/DISPATCH_ROUTING_PROTOCOL.md",
+    "templates/RESULT.md",
+    "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md",
+)
+
+SPEC = importlib.util.spec_from_file_location("governance_conformance", SCRIPT)
+CHECKER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(CHECKER)
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def git(root, *args):
+    completed = subprocess.run(
+        ["git", "-C", str(root), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def write(path, text):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(text.strip() + "\n", encoding="utf-8")
+
+
+def run_checker(root, policy, input_path):
+    completed = subprocess.run(
+        [sys.executable, str(SCRIPT), "--root", str(Path(root).resolve()), "--policy", str(Path(policy).resolve()), "--input", str(Path(input_path).resolve())],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return completed.returncode, json.loads(completed.stdout)
+
+
+def tree_snapshot(root):
+    return {
+        path.relative_to(root).as_posix(): digest(path)
+        for path in sorted(Path(root).rglob("*"))
+        if path.is_file() and ".git" not in path.parts
+    }
+
+
+class ConformanceFixture(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.base = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def central_fixture(self):
+        root = self.base / "central"
+        policy = CHECKER.load_yaml_subset(POLICY)
+        paths = set(policy["central_governance"]["required_paths"])
+        for relative in paths:
+            source = REPO / relative
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "fixture")
+        return root
+
+    def central_input(self, root, name="central-input.yaml", profile=None):
+        commit = git(root, "rev-parse", "HEAD")
+        tree = git(root, "rev-parse", "HEAD^{tree}")
+        input_path = self.base / name
+        profile_line = f"central_profile: {profile}\n" if profile else ""
+        write(
+            input_path,
+            f'''\
+schema_version: "0.2"
+mode: central_governance
+{profile_line}expected_identity:
+  commit: {commit}
+  tree: {tree}
+''',
+        )
+        return input_path
+
+    def mutate_central_and_run(self, relative, old, new, name):
+        root = self.central_fixture()
+        path = root / relative
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text)
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+        git(root, "add", relative)
+        git(root, "commit", "-q", "-m", name)
+        return run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root, f"{name}.yaml"))
+
+    def accepted_baseline_fixture(self):
+        root = self.base / "accepted-baseline"
+        root.mkdir(parents=True)
+        archive = self.base / "accepted-baseline.tar"
+        subprocess.run(
+            ["git", "-C", str(REPO), "archive", "--format=tar", ACCEPTED_0_3_14_COMMIT, "-o", str(archive)],
+            check=True,
+            capture_output=True,
+        )
+        with tarfile.open(archive, "r") as bundle:
+            bundle.extractall(root, filter="data")
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "accepted 0.3.14 baseline")
+        self.assertEqual(git(root, "rev-parse", "HEAD^{tree}"), FROZEN_BASELINE_TREE)
+        return root
+
+    def accepted_0_3_15_fixture(self):
+        root = self.base / "accepted-0.3.15"
+        root.mkdir(parents=True)
+        archive = self.base / "accepted-0.3.15.tar"
+        subprocess.run(
+            ["git", "-C", str(REPO), "archive", "--format=tar", ACCEPTED_0_3_15_COMMIT, "-o", str(archive)],
+            check=True,
+            capture_output=True,
+        )
+        with tarfile.open(archive, "r") as bundle:
+            bundle.extractall(root, filter="data")
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "accepted 0.3.15 baseline")
+        self.assertEqual(git(root, "rev-parse", "HEAD^{tree}"), ACCEPTED_0_3_15_TREE)
+        return root
+
+    def accepted_0_3_16_fixture(self):
+        root = self.base / "accepted-0.3.16"
+        root.mkdir(parents=True)
+        archive = self.base / "accepted-0.3.16.tar"
+        subprocess.run(
+            ["git", "-C", str(REPO), "archive", "--format=tar", ACCEPTED_0_3_16_COMMIT, "-o", str(archive)],
+            check=True,
+            capture_output=True,
+        )
+        with tarfile.open(archive, "r") as bundle:
+            bundle.extractall(root, filter="data")
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "accepted 0.3.16 baseline")
+        self.assertEqual(git(root, "rev-parse", "HEAD^{tree}"), ACCEPTED_0_3_16_TREE)
+        return root
+
+    def baseline_replay_input(self, root):
+        commit = git(root, "rev-parse", "HEAD")
+        tree = git(root, "rev-parse", "HEAD^{tree}")
+        input_path = self.base / "accepted-baseline-input.yaml"
+        write(
+            input_path,
+            f'''\
+schema_version: "0.2"
+mode: central_governance
+central_profile: accepted_0_3_14_replay
+expected_identity:
+  commit: {commit}
+  tree: {tree}
+''',
+        )
+        return input_path
+
+    def downstream_fixture(self):
+        root = self.base / "downstream"
+        state = root / ".agent" / "PROJECT_STATE.md"
+        write(state, "# Project State\n\nCurrent durable task facts are supplied separately.")
+        write(
+            root / ".agent" / "GOVERNANCE_LOCK.yaml",
+            '''\
+schema_version: "0.6"
+governance:
+  repository: owner/governance
+  protocol_version: "0.3.14"
+  pinned_ref: governance-pin-1
+project_policy:
+  may_weaken_central_invariants: false
+modules:
+  lprl:
+    enabled: true
+    version: "0.2.4-pilot"
+    pinned_ref: module-pin-old-valid
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+update_policy:
+  auto_follow_main: false
+  automatic_adoption_allowed: false
+  automatic_pin_advance_allowed: false
+''',
+        )
+        write(
+            root / ".agent" / "LOCAL_POLICY.yaml",
+            '''\
+schema_version: "0.4"
+local_resource_policy:
+  mode: tracking
+  project_root:
+    source: owner_supplied
+  allow_agent_to_choose_or_relocate_project_root: false
+  allow_write_outside_owner_supplied_project_root: false
+  tracking_authorizes_migration_or_cleanup: false
+''',
+        )
+        return root
+
+    def downstream_input(self, root, *, update=False, copied_weakened=False, action=None, task_ref="github:owner/project#7", module_compatible=True):
+        action_text = ""
+        if action is not None:
+            action_text = f'''\
+local_action:
+  project: demo
+  task_ref: {action.get("task_ref", task_ref)}
+  resource_type: {action.get("resource_type", "Workspace")}
+  action: {action.get("action", "reuse")}
+  authority:
+    governance_pin_valid: {str(action.get("governance_pin_valid", True)).lower()}
+    local_policy_valid: {str(action.get("local_policy_valid", True)).lower()}
+    task_authorized: {str(action.get("task_authorized", True)).lower()}
+    action_specific_authorization: {str(action.get("action_specific_authorization", False)).lower()}
+  root:
+    path: "{root.as_posix()}"
+    source: {action.get("root_source", "owner_supplied")}
+    owner_supplied_or_confirmed: {str(action.get("owner_root", True)).lower()}
+    verified: {str(action.get("verified", True)).lower()}
+    within_boundary: {str(action.get("within_boundary", True)).lower()}
+  topology:
+    facts_current: {str(action.get("facts_current", True)).lower()}
+    resource_class_known: {str(action.get("resource_class_known", True)).lower()}
+    shared_resource: {str(action.get("shared_resource", False)).lower()}
+    protected_runtime: {str(action.get("protected_runtime", False)).lower()}
+    owner_set_complete: {str(action.get("owner_set_complete", False)).lower()}
+'''
+        input_path = self.base / f"downstream-{len(list(self.base.glob('downstream-*.yaml')))}.yaml"
+        write(
+            input_path,
+            f'''\
+schema_version: "0.2"
+mode: downstream_project
+project:
+  name: demo
+  root: "{root.as_posix()}"
+  root_source: owner_supplied
+  governance_lock_path: .agent/GOVERNANCE_LOCK.yaml
+  local_policy_path: .agent/LOCAL_POLICY.yaml
+  project_state_path: .agent/PROJECT_STATE.md
+durable_facts:
+  lead_ref: github:owner/project#1@lead
+  lead_digest: lead-digest
+  task_ref: {task_ref if task_ref is not None else 'null'}
+  task_digest: task-digest
+  lead_current: true
+  task_current: true
+  project_state_digest: {digest(root / '.agent' / 'PROJECT_STATE.md')}
+  topology_digest: topology-digest
+  topology_facts_current: true
+  copied_governance_semantics_weakened: {str(copied_weakened).lower()}
+  accepted_governance_pin: governance-pin-1
+  governance_pin_valid: true
+  accepted_module_pin: module-pin-old-valid
+  module_compatible: {str(module_compatible).lower()}
+  update_available: {str(update).lower()}
+{action_text}''',
+        )
+        return input_path
+
+
+class QualificationTests(ConformanceFixture):
+    def test_regression_candidate_self_conformance_healthy(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_core_central_fixture_is_lprl_free_and_conformant(self):
+        repository_before = tree_snapshot(REPO)
+        root = self.central_fixture()
+
+        self.assertFalse((root / "modules/local-resource-lifecycle").exists())
+        self.assertEqual(git(root, "remote"), "")
+
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+        self.assertFalse((root / "modules/local-resource-lifecycle").exists())
+        self.assertEqual(repository_before, tree_snapshot(REPO))
+
+    def test_regression_metadata_contradictions_fail_closed(self):
+        baseline = self.accepted_baseline_fixture()
+        code, result = run_checker(baseline, POLICY, self.baseline_replay_input(baseline))
+        self.assertEqual(code, 2)
+        self.assertIn("MODULE_NOTE_PIN_CONTRADICTION", {item["code"] for item in result["findings"]})
+
+        root = self.central_fixture()
+        write(root / "VERSION", "9.9.9")
+        git(root, "add", "VERSION")
+        git(root, "commit", "-q", "-m", "version mismatch")
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root, "version-mismatch.yaml"))
+        self.assertNotEqual(code, 0)
+        self.assertIn("VERSION_POLICY_MISMATCH", {item["code"] for item in result["findings"]})
+
+    def test_exact_candidate_identity_rejects_dirty_worktree(self):
+        root = self.central_fixture()
+        input_path = self.central_input(root)
+        (root / "README.md").write_text("dirty\n", encoding="utf-8")
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", input_path)
+        self.assertEqual(code, 3)
+        self.assertIn("CANDIDATE_WORKTREE_DIRTY", {item["code"] for item in result["findings"]})
+
+    def test_regression_stable_older_independent_pin_is_advisory(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, update=True))
+        self.assertEqual(code, 0)
+        self.assertTrue(result["update_available"])
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_regression_core_update_cannot_silently_repin_independent_lprl(self):
+        root = self.downstream_fixture()
+        lock = root / ".agent" / "GOVERNANCE_LOCK.yaml"
+        lock_text = lock.read_text(encoding="utf-8")
+        self.assertIn("pinned_ref: module-pin-old-valid", lock_text)
+        lock.write_text(lock_text.replace("pinned_ref: module-pin-old-valid", "pinned_ref: module-pin-new-unapproved", 1), encoding="utf-8")
+
+        # Ordinary update availability must not turn a conflicting LPRL lock pin into an accepted repin.
+        code, result = run_checker(root, POLICY, self.downstream_input(root, update=True))
+        self.assertTrue(result["update_available"])
+        self.assertEqual(code, 3)
+        self.assertIn("MODULE_PIN_CONFLICT", {item["code"] for item in result["findings"]})
+
+    def test_regression_broken_module_pin_blocks(self):
+        root = self.downstream_fixture()
+        lock = root / ".agent" / "GOVERNANCE_LOCK.yaml"
+        lock.write_text(lock.read_text(encoding="utf-8").replace("pinned_ref: module-pin-old-valid", "pinned_ref: null"), encoding="utf-8")
+        code, result = run_checker(root, POLICY, self.downstream_input(root))
+        self.assertEqual(code, 3)
+        codes = {item["code"] for item in result["findings"]}
+        self.assertTrue({"MODULE_PIN_INCOMPLETE", "MODULE_PIN_CONFLICT"} <= codes)
+
+        healthy_root = self.downstream_fixture()
+        code, result = run_checker(healthy_root, POLICY, self.downstream_input(healthy_root, module_compatible=False))
+        self.assertEqual(code, 3)
+        self.assertIn("MODULE_INCOMPATIBLE", {item["code"] for item in result["findings"]})
+
+    def test_regression_healthy_downstream_project(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_regression_runnable_but_governance_drifted(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, copied_weakened=True))
+        self.assertEqual(code, 3)
+        self.assertIn("COPIED_GOVERNANCE_WEAKENED", {item["code"] for item in result["findings"]})
+
+    def test_regression_authorized_workspace_action_allows_without_mutation(self):
+        root = self.downstream_fixture()
+        before = tree_snapshot(root)
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action={}))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["local_action"]["decision"], "ALLOW")
+        self.assertEqual(before, tree_snapshot(root))
+
+    def test_regression_guessed_root_or_missing_task_blocks(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action={"root_source": "cwd"}, task_ref=None))
+        self.assertEqual(code, 3)
+        codes = {item["code"] for item in result["findings"]}
+        self.assertIn("ACTION_ROOT_GUESSED", codes)
+        self.assertIn("DURABLE_FACT_REQUIRED", codes)
+
+    def test_regression_protected_deployment_state_data_guard(self):
+        root = self.downstream_fixture()
+        action = {"resource_type": "Deployment", "action": "modify", "protected_runtime": True}
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action=action))
+        self.assertEqual(code, 3)
+        self.assertEqual(result["local_action"]["decision"], "BLOCK")
+        self.assertIn("PROTECTED_OR_SHARED_ACTION_BLOCKED", result["local_action"]["reasons"])
+
+    def test_regression_unknown_resource_is_non_mutating_block(self):
+        root = self.downstream_fixture()
+        before = tree_snapshot(root)
+        action = {"resource_type": "Unknown", "resource_class_known": False}
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action=action))
+        self.assertEqual(code, 3)
+        self.assertIn("UNKNOWN_RESOURCE", result["local_action"]["reasons"])
+        self.assertTrue(any("Inventory and classify" in item for item in result["advisories"]))
+        self.assertEqual(before, tree_snapshot(root))
+
+    def test_regression_all_bounded_drift_triggers_no_daemon(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        self.assertEqual(len(policy["drift_triggers"]), 7)
+        self.assertFalse(policy["side_effects"]["network_calls_allowed"])
+        self.assertFalse(policy["side_effects"]["central_registry_allowed"])
+        self.assertFalse(policy["side_effects"]["telemetry_or_phone_home_allowed"])
+
+    def test_regression_thin_launcher_presentation(self):
+        task_spec = (REPO / "docs/task-package/TASK_PACKAGE_SPEC.md").read_text(encoding="utf-8")
+        self.assertIn("stable copy-oriented", task_spec)
+        self.assertIn("editable drafting surface", task_spec)
+        self.assertIn("durable Task remains authority", task_spec)
+
+    def test_startup_card_shape_gate_accepts_worker_and_validator(self):
+        task_ref = "github:owner/repo#1@2"
+        for role, final_phrase in (
+            ("worker", "作为该 Task 的执行者执行，不接管项目 Lead。"),
+            ("independent_validator", "作为该 Task 的独立 Validator 执行，不接管项目 Lead。"),
+        ):
+            rendered = "\n".join([
+                "模型: model",
+                "思考等级: high",
+                "对话: session",
+                "",
+                "```text",
+                f"执行 {task_ref}；",
+                "先读取该 Task，并按 Task 内引用读取关联事实；",
+                final_phrase,
+                "```",
+            ])
+            self.assertIsNone(
+                CHECKER.validate_startup_card_shape(
+                    rendered, task_ref, role, ["模型", "思考等级", "对话"], 3
+                )
+            )
+
+    def test_startup_card_shape_gate_rejects_validator_mutations(self):
+        task_ref = "github:owner/repo#1@2"
+        worker = "\n".join([
+            "模型: model",
+            "思考等级: high",
+            "对话: session",
+            "",
+            "```text",
+            f"执行 {task_ref}；",
+            "先读取该 Task，并按 Task 内引用读取关联事实；",
+            "作为该 Task 的执行者执行，不接管项目 Lead。",
+            "```",
+        ])
+        validator = worker.replace(
+            "作为该 Task 的执行者执行，不接管项目 Lead。",
+            "作为该 Task 的独立 Validator 执行，不接管项目 Lead。",
+        )
+        malformed = {
+            "fourth-formal-field": worker.replace("对话: session\n\n", "对话: session\n角色: worker\n\n"),
+            "one-line-launcher": worker.replace(
+                f"执行 {task_ref}；\n先读取该 Task，并按 Task 内引用读取关联事实；\n作为该 Task 的执行者执行，不接管项目 Lead。",
+                f"执行 {task_ref}；先读取该 Task，并按 Task 内引用读取关联事实；作为该 Task 的执行者执行，不接管项目 Lead。",
+            ),
+            "wrong-worker-role": worker.replace("作为该 Task 的执行者执行，不接管项目 Lead。", "作为该 Task 的独立 Validator 执行，不接管项目 Lead。"),
+            "wrong-validator-role": validator.replace("作为该 Task 的独立 Validator 执行，不接管项目 Lead。", "作为该 Task 的执行者执行，不接管项目 Lead。"),
+            "extra-fence": worker + "\n```text\nextra\n```",
+            "trailing-content": worker + "\n尾部内容",
+            "reordered-field": worker.replace("模型: model\n思考等级: high", "思考等级: high\n模型: model"),
+            "missing-field": worker.replace("对话: session\n", ""),
+            "missing-launcher-line": worker.replace("先读取该 Task，并按 Task 内引用读取关联事实；\n", ""),
+            "extra-launcher-line": worker.replace("先读取该 Task，并按 Task 内引用读取关联事实；\n", "额外语义行\n先读取该 Task，并按 Task 内引用读取关联事实；\n"),
+        }
+        for name, candidate in malformed.items():
+            with self.subTest(name=name):
+                role = "independent_validator" if name == "wrong-validator-role" else "worker"
+                with self.assertRaises(ValueError):
+                    CHECKER.validate_startup_card_shape(
+                        candidate, task_ref, role, ["模型", "思考等级", "对话"], 3
+                    )
+
+    def test_q1_kernel_authority_decisions_are_runtime_neutral(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        boundary = policy["runtime_override_boundary"]
+        self.assertTrue(set(boundary["allowlist"]).isdisjoint(boundary["forbidden"]))
+        self.assertIn("task_scope_permission_boundaries", policy["shared_kernel"]["invariants"])
+        self.assertIn("result_independent_validation_and_final_acceptance_boundaries", policy["shared_kernel"]["invariants"])
+
+    def test_q2_web_direct_is_preference_not_requirement(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        web = dispatch["runtime_profiles"]["profiles"]["web_interactive"]
+        self.assertEqual(web["execution_economy_profile"], "lead_direct_preferred")
+        self.assertIn("current_runtime_capability_probe", dispatch["execution_economy"]["precedence_over_economy"])
+        self.assertIn("independent_validation_or_distinct_role_requirement", dispatch["execution_economy"]["precedence_over_economy"])
+
+    def test_q3_codex_lead_minimization_delta(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        codex = dispatch["runtime_profiles"]["profiles"]["codex_native_subagents"]
+        self.assertEqual(codex["execution_economy_profile"], "native_delegate_preferred")
+        self.assertIn("repository_reconnaissance", codex["delegable_preparation_preference"])
+        self.assertIn("tests_and_replay", codex["delegable_preparation_preference"])
+        self.assertEqual(
+            dispatch["execution_economy"]["profiles"]["native_delegate_preferred"]["lead_core_responsibilities_ref"],
+            "lead_core_responsibilities",
+        )
+        self.assertNotIn("preserve_lead_for", dispatch["execution_economy"]["profiles"]["native_delegate_preferred"])
+
+    def test_q3a_lead_core_is_single_runtime_independent_owner(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        core = dispatch["lead_core_responsibilities"]
+        self.assertEqual(core["owner"], "config/DISPATCH_POLICY.yaml")
+        self.assertTrue(core["one_active_lead"])
+        self.assertTrue(core["runtime_independent"])
+        self.assertTrue(core["lead_retains_terminal_accountability"])
+        self.assertEqual(set(core["responsibilities"]), CHECKER.LEAD_CORE_RESPONSIBILITY_KEYS)
+        self.assertTrue(core["delegation"]["bounded"])
+        self.assertFalse(core["delegation"]["authority_transfer"])
+        self.assertTrue(core["delegation"]["preference_only"])
+        self.assertEqual(set(core["forbidden_worker_child_authority"]), {"claim_project_lead", "integrate_siblings", "final_acceptance"})
+        self.assertTrue(core["labels_not_capability_proof"])
+
+    def test_q4_capability_probe_outranks_runtime_label(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        self.assertTrue(dispatch["runtime_profiles"]["capability_probe_outranks_profile_or_client_label"])
+        self.assertFalse(dispatch["execution_economy"]["runtime_profile_is_capability_proof"])
+        self.assertTrue(dispatch["unknown_resolution"]["never_treat_unknown_as_available"])
+
+    def test_q5_forbidden_runtime_override_fails_closed(self):
+        code, result = self.mutate_central_and_run(
+            "config/DISPATCH_POLICY.yaml",
+            "      launcher_presentation_hint: deterministic_thin_launcher\n",
+            "      launcher_presentation_hint: deterministic_thin_launcher\n      task_authority_or_scope: weakened\n",
+            "forbidden-runtime-override",
+        )
+        self.assertEqual(code, 3)
+        self.assertIn("RUNTIME_PROFILE_OVERRIDE_FORBIDDEN", {item["code"] for item in result["findings"]})
+
+    def test_q6_cold_path_determinism_and_reduced_hot_path(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        self.assertLessEqual(result["metrics"]["hot_path_required_surfaces"], 3)
+        policy = CHECKER.load_yaml_subset(POLICY)
+        self.assertFalse(policy["cold_path_manifest"]["dynamic_loader_registry_or_daemon_allowed"])
+        self.assertEqual(set(policy["cold_path_manifest"]["categories"]), set(CHECKER.COLD_PATHS))
+
+    def test_hot_path_metric_equals_exact_committed_blob_sum(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        policy = CHECKER.load_yaml_subset(root / "config/CONFORMANCE_POLICY.yaml")
+        expected = sum(
+            int(git(root, "cat-file", "-s", f"HEAD:{relative}"))
+            for relative in policy["simplicity"]["candidate_hot_path_surfaces"]
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(result["metrics"]["hot_path_required_bytes"], expected)
+        self.assertEqual(policy["simplicity"]["candidate_hot_path_required_bytes_max"], 30000)
+
+    def test_hot_path_metric_is_identical_across_lf_and_crlf_checkouts(self):
+        source = self.central_fixture()
+        lf_root = self.base / "lf-checkout"
+        crlf_root = self.base / "crlf-checkout"
+        subprocess.run(
+            ["git", "-c", "core.autocrlf=false", "clone", "-q", str(source), str(lf_root)],
+            check=True,
+            capture_output=True,
+        )
+        subprocess.run(
+            ["git", "-c", "core.autocrlf=true", "clone", "-q", str(source), str(crlf_root)],
+            check=True,
+            capture_output=True,
+        )
+        relative = "config/DISPATCH_POLICY.yaml"
+        self.assertNotIn(b"\r\n", (lf_root / relative).read_bytes())
+        self.assertIn(b"\r\n", (crlf_root / relative).read_bytes())
+        lf_code, lf_result = run_checker(
+            lf_root,
+            lf_root / "config/CONFORMANCE_POLICY.yaml",
+            self.central_input(lf_root, "lf-input.yaml"),
+        )
+        crlf_code, crlf_result = run_checker(
+            crlf_root,
+            crlf_root / "config/CONFORMANCE_POLICY.yaml",
+            self.central_input(crlf_root, "crlf-input.yaml"),
+        )
+        self.assertEqual(lf_code, 0)
+        self.assertEqual(crlf_code, 0)
+        self.assertEqual(
+            lf_result["metrics"]["hot_path_required_bytes"],
+            crlf_result["metrics"]["hot_path_required_bytes"],
+        )
+
+    def test_frozen_baseline_hot_path_metric_uses_same_blob_definition(self):
+        evaluation = CHECKER.Evaluation("central_governance")
+        observed = sum(
+            CHECKER.canonical_git_blob_size(REPO, ACCEPTED_0_3_15_COMMIT, relative, evaluation)
+            for relative in FROZEN_BASELINE_HOT_PATHS
+        )
+        self.assertEqual(observed, 46772)
+        self.assertEqual(evaluation.result()["overall_status"], "CONFORMANT")
+
+    def test_missing_hot_path_surface_fails_closed(self):
+        root = self.central_fixture()
+        relative = "templates/RESULT.md"
+        (root / relative).unlink()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 3)
+        self.assertIn("HOT_PATH_SURFACE_MISSING", {item["code"] for item in result["findings"]})
+
+    def test_untracked_hot_path_surface_fails_closed(self):
+        root = self.central_fixture()
+        relative = "untracked-hot-path.md"
+        write(root / relative, "untracked")
+        evaluation = CHECKER.Evaluation("central_governance")
+        self.assertIsNone(CHECKER.canonical_git_blob_size(root, git(root, "rev-parse", "HEAD"), relative, evaluation))
+        self.assertEqual(evaluation.result()["overall_status"], "BLOCKED")
+        self.assertIn("HOT_PATH_CANONICAL_BLOB_UNAVAILABLE", {item["code"] for item in evaluation.findings})
+
+    def test_unresolvable_hot_path_commit_fails_closed(self):
+        root = self.central_fixture()
+        evaluation = CHECKER.Evaluation("central_governance")
+        self.assertIsNone(
+            CHECKER.canonical_git_blob_size(
+                root,
+                "0000000000000000000000000000000000000000",
+                "templates/RESULT.md",
+                evaluation,
+            )
+        )
+        self.assertEqual(evaluation.result()["overall_status"], "BLOCKED")
+        self.assertIn("HOT_PATH_CANONICAL_BLOB_UNAVAILABLE", {item["code"] for item in evaluation.findings})
+
+    def test_q7_unique_semantic_ownership_and_reference_roles(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        owners = policy["semantic_authority"]["owners"]
+        self.assertEqual(set(owners), CHECKER.SEMANTIC_OWNER_KEYS)
+        self.assertTrue(all(isinstance(owner, str) and owner for owner in owners.values()))
+        self.assertEqual(policy["semantic_authority"]["surface_roles"], CHECKER.SURFACE_ROLES)
+
+    def test_q8_generic_frozen_task_precedence_replay(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        precedence = policy["durable_authority_precedence"]
+        self.assertEqual(precedence["required_order"], CHECKER.PRECEDENCE_ORDER)
+        self.assertEqual(precedence["replay_fixture"]["selected_authority_role"], "exact_frozen_task_revision")
+        self.assertFalse(precedence["replay_fixture"]["protected_older_open_work_selected"])
+        self.assertNotIn("issue_65", json.dumps(precedence, sort_keys=True))
+
+    def test_q9_conformance_remains_offline_read_only_derived(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        for forbidden in ("import socket", "import urllib", "import requests", "urlopen(", "write_text(", "open(\"w"):
+            self.assertNotIn(forbidden, source)
+        policy = CHECKER.load_yaml_subset(POLICY)
+        self.assertFalse(policy["side_effects"]["network_calls_allowed"])
+        self.assertFalse(policy["side_effects"]["authority_writes_allowed"])
+        self.assertFalse(policy["side_effects"]["filesystem_mutation_allowed"])
+
+    def _assert_lprl_independent_pin_contract(self, root):
+        release = CHECKER.load_yaml_subset(Path(root) / "GOVERNANCE_RELEASE.yaml")
+        lprl = release["modules"]["lprl"]
+
+        self.assertTrue(lprl["independent_pin"])
+        self.assertEqual(lprl["root_path"], "modules/local-resource-lifecycle")
+        self.assertEqual(lprl["version_path"], "modules/local-resource-lifecycle/VERSION")
+        self.assertTrue(lprl["ordinary_governance_upgrade_does_not_silently_repin_module"])
+
+        module_root = Path(root) / lprl["root_path"]
+        version_path = Path(root) / lprl["version_path"]
+        self.assertTrue(module_root.is_dir())
+        self.assertTrue(version_path.is_file())
+        self.assertEqual(lprl["version"], version_path.read_text(encoding="utf-8").strip())
+
+    @unittest.skipUnless(
+        (REPO / "modules/local-resource-lifecycle").is_dir(),
+        "LPRL module is absent from this Core-only distribution",
+    )
+    def test_q10_lprl_independent_pin_and_module_version_contract(self):
+        self._assert_lprl_independent_pin_contract(REPO)
+
+    def test_q10_explicit_lprl_evolution_does_not_require_historical_tree_equality(self):
+        root = self.base / "explicit-lprl-evolution"
+        write(
+            root / "GOVERNANCE_RELEASE.yaml",
+            '''\
+modules:
+  lprl:
+    independent_pin: true
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+    version: "0.2.6-pilot"
+    ordinary_governance_upgrade_does_not_silently_repin_module: true
+''',
+        )
+        write(root / "modules/local-resource-lifecycle/VERSION", "0.2.6-pilot")
+        write(root / "modules/local-resource-lifecycle/README.md", "historical module content")
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "independent LPRL baseline")
+        baseline = git(root, "rev-parse", "HEAD")
+
+        write(root / "modules/local-resource-lifecycle/README.md", "explicit LPRL-owned evolution")
+        git(root, "add", "modules/local-resource-lifecycle/README.md")
+        git(root, "commit", "-q", "-m", "explicit LPRL evolution")
+
+        changed_paths = git(root, "diff", "--name-only", baseline, "--", "modules/local-resource-lifecycle")
+        self.assertEqual(changed_paths.splitlines(), ["modules/local-resource-lifecycle/README.md"])
+        self._assert_lprl_independent_pin_contract(root)
+
+    def test_q11_accepted_0_3_15_behavior_replay(self):
+        root = self.accepted_0_3_15_fixture()
+        input_path = self.central_input(root, "accepted-0.3.15-input.yaml", "accepted_0_3_15_replay")
+        code, result = run_checker(root, POLICY, input_path)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_q12_net_simplification_metrics(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        metrics = result["metrics"]
+        self.assertLessEqual(metrics["hot_path_required_surfaces"], 3)
+        self.assertLessEqual(metrics["hot_path_required_bytes"], 30000)
+        self.assertEqual(metrics["material_normative_semantics_with_multiple_owners"], 0)
+        self.assertEqual(metrics["runtime_profiles_containing_full_core_copies"], 0)
+        self.assertGreaterEqual(metrics["current_tree_retired_or_collapsed_surfaces"], 3)
+        self.assertEqual(metrics["net_authority_surface"], "decrease")
+
+    def test_q13_local_to_codex_remote_to_web_placement(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        placement = dispatch["runtime_placement_policy"]
+        self.assertEqual(placement["local_materialization_required"]["preferred_surface"], "codex")
+        self.assertEqual(placement["local_materialization_required"]["policy"], "codex_required_by_default")
+        self.assertTrue(placement["local_materialization_required"]["web_exception_requires_bounded_reason"])
+        self.assertEqual(placement["no_local_materialization_required"]["preferred_surface"], "web")
+        self.assertEqual(placement["no_local_materialization_required"]["policy"], "web_preferred")
+        self.assertEqual(set(placement["higher_precedence_constraints"]), CHECKER.PLACEMENT_HIGHER_PRECEDENCE)
+        self.assertFalse(placement["placement_may_change_task_scope_or_permissions"])
+
+    def test_q14_codex_worker_quota_economy_and_accountability(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        delegation = dispatch["codex_worker_native_delegation"]
+        self.assertTrue(delegation["default_allowed"])
+        self.assertTrue(delegation["child_use_optional"])
+        self.assertIn("sol_or_terra_quota_preservation", delegation["valid_material_benefits"])
+        self.assertTrue(delegation["cheaper_child_must_be_qualified_for_actual_subproblem_and_risk"])
+        self.assertTrue(delegation["parent_worker_retains_scope_permission_integration_and_terminal_result_accountability"])
+
+    def test_q15_child_write_validation_and_recursion_boundaries(self):
+        dispatch = CHECKER.load_yaml_subset(REPO / "config/DISPATCH_POLICY.yaml")
+        delegation = dispatch["codex_worker_native_delegation"]
+        self.assertTrue(delegation["parallel_child_writes_require_pairwise_disjoint_scope"])
+        self.assertEqual(delegation["overlapping_child_writes_action"], "serialize_or_fail")
+        self.assertFalse(delegation["child_review_counts_as_independent_validation"])
+        self.assertFalse(delegation["child_recursive_delegation_default"])
+        self.assertFalse(delegation["uncontrolled_recursive_agent_tree_allowed"])
+
+    def test_task69_q1_r1_stays_pinned_when_r2_appears_without_reanchor(self):
+        decision = CHECKER.running_task_revision_decision({
+            "activated_task_ref": "task@R1",
+            "observed_later_task_ref": "task@R2",
+            "later_revision_material_to_running_contract": False,
+            "reanchor_authorized": False,
+        })
+        self.assertEqual(decision["selected_task_ref"], "task@R1")
+        self.assertEqual(decision["action"], "CONTINUE_PINNED_EXACT_REVISION")
+
+    def test_task69_q2_r2_is_readable_fact_not_imported_contract(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        rules = policy["running_task_revision_binding"]["rules"]
+        self.assertTrue(rules["later_durable_facts_may_be_read_without_authority_adoption"])
+        self.assertFalse(rules["same_issue_later_revision_is_in_place_contract_update"])
+        fixture = policy["running_task_revision_binding"]["replay_fixtures"]["web_no_reanchor"]
+        self.assertEqual(CHECKER.running_task_revision_decision(fixture)["selected_task_ref"], "task@R1")
+
+    def test_task69_q3_material_r2_conflict_without_reanchor_fails_closed(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        fixture = policy["running_task_revision_binding"]["replay_fixtures"]["material_conflict_without_reanchor"]
+        decision = CHECKER.running_task_revision_decision(fixture)
+        self.assertEqual(decision["selected_task_ref"], "task@R1")
+        self.assertEqual(decision["action"], "NEEDS_ATTENTION_OR_REANCHOR_REQUIRED")
+        self.assertFalse(policy["running_task_revision_binding"]["rules"]["material_execution_under_later_revision_without_reanchor_allowed"])
+
+    def test_task69_q4_authorized_reanchor_switches_binding_and_incomplete_evidence_does_not(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        fixture = policy["running_task_revision_binding"]["replay_fixtures"]["authorized_reanchor"]
+        decision = CHECKER.running_task_revision_decision(fixture)
+        self.assertEqual(decision["selected_task_ref"], "task@R2")
+        self.assertEqual(decision["action"], "CONTINUE_REANCHORED_EXACT_REVISION")
+        incomplete = dict(fixture, reanchor_evidence_ref=None)
+        incomplete_decision = CHECKER.running_task_revision_decision(incomplete)
+        self.assertEqual(incomplete_decision["selected_task_ref"], "task@R1")
+        self.assertEqual(incomplete_decision["action"], "NEEDS_ATTENTION_OR_REANCHOR_REQUIRED")
+
+    def test_task69_q5_publication_alone_does_not_activate_running_external_worker(self):
+        rules = CHECKER.load_yaml_subset(POLICY)["running_task_revision_binding"]["rules"]
+        self.assertFalse(rules["task_publication_is_activation_or_reanchor"])
+        self.assertFalse(rules["lead_publication_implies_running_external_worker_adoption"])
+
+    def test_task69_q6_result_is_interpreted_against_executed_exact_ref(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        binding = policy["running_task_revision_binding"]
+        self.assertEqual(binding["rules"]["lead_result_interpretation_basis"], "executed_exact_task_revision")
+        result_template = (REPO / "templates/RESULT.md").read_text(encoding="utf-8")
+        for field in CHECKER.RUNNING_TASK_RESULT_FIELDS:
+            self.assertIn(field, result_template)
+
+    def test_task69_q7_internal_child_cannot_expand_parent_to_r2(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        binding = policy["running_task_revision_binding"]
+        self.assertEqual(binding["rules"]["internal_child_binding"], "parent_exact_activated_task_revision")
+        fixture = binding["replay_fixtures"]["child_cannot_expand_parent"]
+        self.assertEqual(CHECKER.running_task_revision_decision(fixture)["selected_task_ref"], "parent-task@R1")
+
+    def test_task69_q8_web_and_codex_have_same_authority_outcome(self):
+        fixtures = CHECKER.load_yaml_subset(POLICY)["running_task_revision_binding"]["replay_fixtures"]
+        web = CHECKER.running_task_revision_decision(fixtures["web_no_reanchor"])
+        codex = CHECKER.running_task_revision_decision(fixtures["codex_no_reanchor"])
+        self.assertEqual(web, codex)
+
+    def test_task69_q9_accepted_0_3_16_takeover_dispatch_validation_acceptance_replay(self):
+        root = self.accepted_0_3_16_fixture()
+        input_path = self.central_input(root, "accepted-0.3.16-input.yaml", "accepted_0_3_16_replay")
+        code, result = run_checker(root, POLICY, input_path)
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_task69_q10_unique_owner_and_hot_path_simplicity(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["metrics"]["running_task_revision_binding_owner_count"], 1)
+        self.assertEqual(result["metrics"]["running_task_revision_replay_count"], 5)
+        self.assertLessEqual(result["metrics"]["hot_path_required_surfaces"], 3)
+        self.assertLessEqual(result["metrics"]["hot_path_required_bytes"], 30000)
+
+    def test_task69_q11_exact_candidate_central_conformance(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["evaluator_version"], "0.3.17")
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+        self.assertEqual(result["findings"], [])
+
+    def test_presentation_drift_replays(self):
+        malformed = [
+            ("presentation:\n  canonical_owner: docs/task-package/TASK_PACKAGE_SPEC.md\n  startup_card_display_fields: [模型, 思考等级, 对话]", "presentation:\n  canonical_owner: docs/task-package/TASK_PACKAGE_SPEC.md\n  startup_card_display_fields: [模型, 思考等级, 对话, 角色]", "presentation-extra-field"),
+            ("internal_reasoning_profile_in_native_thinking_field_allowed: false", "internal_reasoning_profile_in_native_thinking_field_allowed: true", "presentation-profile-leak"),
+            ("durable_task_details_in_launcher_allowed: false\n  standard_launcher_semantic_lines: 3", "durable_task_details_in_launcher_allowed: false\n  standard_launcher_semantic_lines: 1", "presentation-one-line"),
+        ]
+        for old, new, name in malformed:
+            with self.subTest(name=name):
+                code, result = self.mutate_central_and_run("config/CONFORMANCE_POLICY.yaml", old, new, name)
+                self.assertEqual(code, 3)
+                self.assertIn("PRESENTATION_CONTRACT_INVALID", {item["code"] for item in result["findings"]})
+
+    def test_mandatory_startup_card_gate_contract_is_explicit_and_fail_closed(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        presentation = policy["presentation"]
+        self.assertTrue(presentation["startup_card_gate_required"])
+        self.assertFalse(presentation["manual_handwritten_standard_card_emission_allowed"])
+        self.assertTrue(presentation["emit_only_after_gate_pass"])
+        self.assertEqual(presentation["gate_failure_action"], "BLOCK")
+        mutations = [
+            ("startup_card_gate_required: true", "startup_card_gate_required: false", "gate-required"),
+            ("manual_handwritten_standard_card_emission_allowed: false", "manual_handwritten_standard_card_emission_allowed: true", "manual-bypass"),
+            ("emit_only_after_gate_pass: true", "emit_only_after_gate_pass: false", "emit-before-pass"),
+            ("gate_failure_action: BLOCK", "gate_failure_action: REVISE_REQUIRED", "failure-action"),
+        ]
+        for old, new, name in mutations:
+            with self.subTest(name=name):
+                code, result = self.mutate_central_and_run("config/CONFORMANCE_POLICY.yaml", old, new, name)
+                self.assertEqual(code, 3)
+                self.assertTrue(
+                    {"PRESENTATION_CONTRACT_INVALID", "REQUIRED_INVARIANT_MARKER_MISSING"}
+                    & {item["code"] for item in result["findings"]}
+                )
+
+    def test_unknown_contract_facts_fail_closed(self):
+        mutations = [
+            ("  surface_roles:\n", "    unknown_semantic: README.md\n  surface_roles:\n", "unknown-semantic"),
+            ("  dynamic_loader_registry_or_daemon_allowed: false\n", "    unknown_cold_path:\n      trigger: unknown\n      owner: README.md\n  dynamic_loader_registry_or_daemon_allowed: false\n", "unknown-cold-path"),
+            ("    protected_older_open_work_selected: false\n", "    protected_older_open_work_selected: false\n    unknown_precedence_fact: true\n", "unknown-precedence"),
+        ]
+        for old, new, name in mutations:
+            with self.subTest(name=name):
+                code, result = self.mutate_central_and_run("config/CONFORMANCE_POLICY.yaml", old, new, name)
+                self.assertEqual(code, 3)
+                self.assertIn("POLICY_UNKNOWN_KEY", {item["code"] for item in result["findings"]})
+
+    def test_duplicate_keys_fail_closed_and_output_is_deterministic(self):
+        root = self.downstream_fixture()
+        malformed = self.base / "duplicate.yaml"
+        write(malformed, 'schema_version: "0.2"\nmode: downstream_project\nmode: central_governance')
+        first_code, first = run_checker(root, POLICY, malformed)
+        second_code, second = run_checker(root, POLICY, malformed)
+        self.assertEqual((first_code, first), (second_code, second))
+        self.assertEqual(first_code, 3)
+        self.assertEqual(first["overall_status"], "BLOCKED")
+
+    def test_checker_has_no_network_dependency_and_policy_freezes_surface(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        for forbidden in ("import socket", "import urllib", "import requests", "http.client", "urlopen("):
+            self.assertNotIn(forbidden, source)
+        policy = CHECKER.load_yaml_subset(POLICY)
+        expected = {
+            "config/DISPATCH_POLICY.yaml",
+            "config/CONFORMANCE_POLICY.yaml",
+            "docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md",
+            "templates/GOVERNANCE_CONFORMANCE_INPUT.yaml",
+            "templates/GOVERNANCE_CONFORMANCE_RESULT.yaml",
+            "templates/GOVERNANCE_CONFORMANCE_CHECK.py",
+            "templates/STARTUP_CARD_RENDER.py",
+            "tests/test_governance_conformance.py",
+            "tests/test_startup_card_renderer.py",
+            "README.md",
+            "VERSION",
+            "GOVERNANCE_RELEASE.yaml",
+            "CHANGELOG.md",
+            "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md",
+            "docs/task-package/TASK_PACKAGE_SPEC.md",
+            "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md",
+            "docs/protocol/AGENT_COORDINATION_PROTOCOL.md",
+            "docs/protocol/DISPATCH_ROUTING_PROTOCOL.md",
+            "docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md",
+        }
+        self.assertEqual(set(policy["maximum_write_surface"]), expected)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+
+class ModelRoutingAndChallengerTests(unittest.TestCase):
+    @classmethod
+    def load_challenger_exploration(cls):
+        lines = (REPO / "config" / "MODEL_ROUTING.yaml").read_text(encoding="utf-8").splitlines()
+        start = lines.index("  challenger_exploration:")
+        end = next(
+            index
+            for index in range(start + 1, len(lines))
+            if lines[index].strip()
+            and len(lines[index]) - len(lines[index].lstrip()) < 2
+        )
+        subset = "\n".join(line[2:] if line else "" for line in lines[start:end]) + "\n"
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "challenger-exploration.yaml"
+            path.write_text(subset, encoding="utf-8")
+            return CHECKER.load_yaml_subset(path)["challenger_exploration"]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.registry = (REPO / "config" / "MODEL_REGISTRY.yaml").read_text(encoding="utf-8")
+        cls.routing = (REPO / "config" / "MODEL_ROUTING.yaml").read_text(encoding="utf-8")
+        cls.seed = (REPO / "config" / "BOOTSTRAP_ROUTING_SEED.yaml").read_text(encoding="utf-8")
+        cls.challenger_exploration = cls.load_challenger_exploration()
+
+    def assert_challenger_exploration_contract(self, exploration):
+        self.assertTrue(exploration["enabled"])
+        self.assertEqual(exploration["owner"], "config/MODEL_ROUTING.yaml")
+        self.assertEqual(
+            exploration["selection_stage"],
+            "after_eligibility_before_calibration_ranking",
+        )
+        self.assertTrue(exploration["deterministic"])
+        self.assertFalse(exploration["random_sampling"])
+        self.assertFalse(exploration["percentage_allocation"])
+        self.assertFalse(exploration["bandit_policy"])
+        self.assertTrue(exploration["next_safe_comparable_opportunity_only"])
+        self.assertEqual(
+            exploration["comparable_group_dimensions"],
+            [
+                "role",
+                "task_class",
+                "risk_level",
+                "model_semantic_key",
+                "reasoning_semantic_key",
+            ],
+        )
+
+        evidence = exploration["evidence_strength"]
+        self.assertEqual(evidence["source"], "templates/PROJECT_CALIBRATION_EXTRACTOR.py")
+        self.assertEqual(evidence["under_evidenced_bands"], ["insufficient", "developing"])
+        self.assertTrue(evidence["established_removes_exploration_preference"])
+        self.assertTrue(evidence["numeric_thresholds_owned_by_source"])
+
+        self.assertEqual(
+            exploration["eligibility_gates"],
+            [
+                "exact_task_or_owner_executor_override",
+                "registry_status_role_task_risk_ceiling",
+                "required_capability_and_runtime_reachability",
+                "independence_requirements",
+                "material_task_suitability",
+                "safety_permission_and_side_effect_boundaries",
+            ],
+        )
+
+        boundaries = exploration["status_boundaries"]
+        self.assertEqual(
+            boundaries["candidate"]["allowed_routes"],
+            ["shadow", "qualification", "evidence_acquisition"],
+        )
+        self.assertFalse(boundaries["candidate"].get("production_mutation_authority"))
+        self.assertEqual(
+            boundaries["provisional"]["allowed_route"],
+            "bounded_production_within_registry_ceiling",
+        )
+        self.assertTrue(
+            boundaries["provisional"].get("exploration_may_not_expand_registry_ceiling")
+        )
+
+        safe = exploration["safe_acquisition"]
+        self.assertEqual(
+            safe["forbidden_work"],
+            [
+                "high_risk_only_for_evidence",
+                "critical_risk_only_for_evidence",
+                "payment_or_financial_real_write",
+                "irreversible_platform_effect",
+                "separately_gated_destructive_or_privileged_action",
+                "permission_or_scope_expansion",
+            ],
+        )
+        self.assertEqual(
+            safe["unavailable_or_aborted_before_substantive_execution"],
+            {"positive_sample_credit": False, "negative_quality_penalty": False},
+        )
+
+        preference = exploration["preference"]
+        self.assertTrue(preference["under_evidenced_challenger_over_established_incumbent"])
+        self.assertTrue(preference["only_for_next_safe_objectively_verifiable_comparable_opportunity"])
+        self.assertFalse(preference["established_incumbent_exploration_preference"])
+        self.assertEqual(
+            preference["multiple_challengers"],
+            {
+                "first": "less_developed_comparable_evidence",
+                "tie_break": "existing_routing_prior",
+            },
+        )
+        self.assertTrue(preference["no_cross_role_global_score"])
+
+        self.assertEqual(
+            exploration["deferral_reasons"],
+            [
+                "exact_task_or_owner_executor_override",
+                "runtime_or_required_capability_unavailable",
+                "material_task_unsuitability",
+                "independence_conflict",
+                "risk_or_side_effect_boundary",
+            ],
+        )
+        self.assertTrue(exploration["owner_lead_boundary"]["exact_task_or_owner_executor_override_wins"])
+        self.assertTrue(
+            exploration["owner_lead_boundary"][
+                "model_selection_does_not_widen_task_scope_permissions_risk_or_write_authority"
+            ]
+        )
+
+    def test_gemini_38_is_fresh_candidate_and_gemini_37_remains_provisional(self):
+        self.assertIn(
+            'gemini-3.8-flash:\n    provider: google\n    status: candidate\n    evidence:\n      prospective_samples: 0\n      retrospective_grade: none',
+            self.registry,
+        )
+        self.assertIn(
+            'gemini-3.7-flash:\n    provider: google\n    status: provisional',
+            self.registry,
+        )
+        self.assertIn(
+            'provisional_roles:\n      independent_evidence_validator:\n        risk_ceiling: medium',
+            self.registry,
+        )
+        self.assertNotIn("gemini-3.8-flash:\n    provider: google\n    status: provisional", self.registry)
+        self.assertNotIn("gemini-3.8-flash:\n    provider: google\n    status: preferred", self.registry)
+
+    def test_challenger_exploration_structured_contract(self):
+        self.assert_challenger_exploration_contract(self.challenger_exploration)
+
+    def test_exploration_safe_acquisition_has_no_credit_or_penalty_on_abort(self):
+        safe = self.challenger_exploration["safe_acquisition"]
+        self.assertEqual(
+            safe["forbidden_work"],
+            [
+                "high_risk_only_for_evidence",
+                "critical_risk_only_for_evidence",
+                "payment_or_financial_real_write",
+                "irreversible_platform_effect",
+                "separately_gated_destructive_or_privileged_action",
+                "permission_or_scope_expansion",
+            ],
+        )
+        self.assertEqual(
+            safe["unavailable_or_aborted_before_substantive_execution"],
+            {"positive_sample_credit": False, "negative_quality_penalty": False},
+        )
+
+    def test_challenger_exploration_mutation_resistance(self):
+        mutations = []
+
+        candidate_authority = copy.deepcopy(self.challenger_exploration)
+        candidate_authority["status_boundaries"]["candidate"]["production_mutation_authority"] = True
+        mutations.append(("candidate-production-authority", candidate_authority))
+
+        provisional_ceiling = copy.deepcopy(self.challenger_exploration)
+        provisional_ceiling["status_boundaries"]["provisional"].pop(
+            "exploration_may_not_expand_registry_ceiling"
+        )
+        provisional_ceiling["mutation_fixture_note"] = {
+            "exploration_may_not_expand_registry_ceiling": True
+        }
+        mutations.append(("provisional-ceiling-parent", provisional_ceiling))
+
+        executor_override = copy.deepcopy(self.challenger_exploration)
+        executor_override["eligibility_gates"].remove("exact_task_or_owner_executor_override")
+        executor_override["mutation_fixture_note"] = {
+            "exact_task_or_owner_executor_override": True
+        }
+        mutations.append(("eligibility-gate-parent", executor_override))
+
+        evidence_bands = copy.deepcopy(self.challenger_exploration)
+        evidence_bands["evidence_strength"]["under_evidenced_bands"] = []
+        evidence_bands["mutation_fixture_note"] = {
+            "under_evidenced_bands": ["insufficient", "developing"]
+        }
+        mutations.append(("evidence-band-parent", evidence_bands))
+
+        for name, mutated in mutations:
+            with self.subTest(name=name):
+                with self.assertRaises(AssertionError):
+                    self.assert_challenger_exploration_contract(mutated)
+
+    def test_gemini_38_seed_is_limited_to_safe_discovery_surfaces(self):
+        repo_navigation = self.seed.split("  bounded_code_edit:", 1)[0]
+        independent_validation = self.seed.split("  independent_validation:", 1)[1]
+        self.assertIn("model: gemini-3.8-flash", repo_navigation)
+        self.assertIn("model: gemini-3.7-flash", repo_navigation)
+        self.assertIn("model: gemini-3.8-flash", independent_validation)
+        self.assertNotIn("model: gemini-3.8-flash", self.seed.split("  bounded_code_edit:", 1)[1].split("  complex_multi_file_or_debugging:", 1)[0])
+
+    def test_generic_gemini_reasoning_adapter_is_reused(self):
+        adapter = (REPO / "config" / "REASONING_ADAPTERS.yaml").read_text(encoding="utf-8")
+        self.assertNotIn("gemini-3.8-flash", adapter)
+        self.assertIn("low", adapter)
+        self.assertIn("medium", adapter)
+        self.assertIn("high", adapter)

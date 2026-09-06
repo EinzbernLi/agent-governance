@@ -1,0 +1,51 @@
+schema_version: "0.3"
+
+# Optional continuity payload for cross-session / cross-runtime Lead takeover.
+# Persist this payload inside the project's already chosen durable fact source.
+# This is not a distributed lock, task authority, project-version marker, or runtime capability snapshot.
+# It answers: which Lead generation currently owns formal project orchestration authority, and which
+# control scope that generation may continue under?
+
+lead_claim:
+  generation: 1
+  parent_claim_ref: null
+  active_lead_role: lead_controller
+  runtime: ""
+  model: ""
+
+  claimed_from_checkpoint: null
+  project_state_ref: ""
+  active_task_ref: ""
+  code_ref: ""
+
+  # Inherit the latest valid parent control scope unless a newer explicit durable authority narrows
+  # or widens it. A takeover itself may preserve or narrow scope, but must not widen it by inference.
+  control_scope:
+    mode: "normal_project_continuation|qualification_only|task_scoped|blocked"
+    source_ref: ""
+
+  claim_reason: "takeover|resume|runtime_switch|session_rollover|explicit_owner_request|conflict_recovery"
+  claimed_at: ""
+
+  # Populate only for conflict recovery. A normal claim leaves this empty.
+  conflicting_claim_refs: []
+
+rules:
+  generation_monotonic: true
+  one_active_lead: true
+  parent_claim_must_match_latest_visible_claim: true
+  read_before_write: true
+  reread_after_write: true
+  sibling_claim_conflict_fail_closed: true
+  conflict_recovery_uses_next_generation: true
+  checkpoint_is_state_not_lock: true
+  claim_is_control_not_project_state: true
+  control_scope_inherits_from_parent_or_newer_explicit_authority: true
+  takeover_must_not_widen_scope_by_inference: true
+  activation_required_before_task_execution_or_dispatch: true
+  use_existing_project_fact_source: true
+  create_second_authoritative_store: false
+  runtime_capability_requires_fresh_probe: true
+  stale_lead_must_retake_before_formal_mutation_or_dispatch: true
+  owner_content_relay_required: false
+  ordinary_same_session_claim_required: false

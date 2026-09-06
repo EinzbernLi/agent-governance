@@ -1,0 +1,360 @@
+schema_version: "0.10"
+last_updated: "2026-09-06"
+dispatch_policy: config/DISPATCH_POLICY.yaml
+
+routing_policy:
+  require_qualified_status: true
+  allow_candidate_for_shadow_tasks_only: true
+  allow_provisional_for_bounded_production: true
+  lead_controller_must_accept_final_result: true
+  model_selection_is_independent_of_dispatch_route: true
+  model_selection_is_independent_of_execution_economy: true
+  execution_economy_may_not_override_model_qualification: true
+  use_provider_native_reasoning_levels: true
+  forbid_cross_provider_label_equivalence: true
+
+  output_semantics:
+    explicit_task_override_may_fix_exact_executor: true
+    otherwise_produces_ranked_qualified_candidates: true
+    material_suitability_difference_outranks_execution_economy: true
+    materially_equivalent_qualified_candidates_may_be_tiebroken_by_execution_economy: true
+
+  formal_launch_gate:
+    required_for_standard_roles:
+      - worker
+      - independent_validator
+    decision_is_derived_evidence_not_authority: true
+    decision_owner: config/MODEL_ROUTING.yaml
+    required_fields:
+      - role
+      - task_class
+      - risk_level
+      - authority_class
+      - selected_model
+      - selected_reasoning
+      - challenger_disposition
+    authority_classes:
+      - production
+      - shadow
+      - qualification
+      - evidence_acquisition
+    challenger_dispositions:
+      - not_applicable
+      - selected
+      - deferred
+    optional_challenger_fields:
+      - challenger_model
+      - challenger_evidence_strength
+      - challenger_defer_reason
+    challenger_under_evidenced_bands_source: challenger_exploration.evidence_strength.under_evidenced_bands
+    challenger_deferral_reasons_source: challenger_exploration.deferral_reasons
+    candidate_production_authority_allowed: false
+    provisional_production_must_remain_within_registry_ceiling: true
+    selected_model_and_reasoning_must_match_startup_card: true
+    ranking_or_model_selection_inside_startup_renderer_allowed: false
+    missing_or_invalid_decision_action: BLOCK
+
+  evidence_sources:
+    bootstrap_seed: config/BOOTSTRAP_ROUTING_SEED.yaml
+    governance_calibration_snapshot: config/CALIBRATION_SNAPSHOT.yaml
+    accepted_external_benchmark_evidence:
+      path: config/EXTERNAL_MODEL_EVIDENCE.yaml
+      source_contract: config/EXTERNAL_MODEL_EVIDENCE_SOURCE.yaml
+      protocol: docs/model-governance/EXTERNAL_MODEL_EVIDENCE.md
+      derived_evidence_only: true
+      required_for_task_authority: false
+      may_change_model_qualification_automatically: false
+      exact_accepted_evidence_ref_required_when_materially_used: true
+    project_local_calibration:
+      transport: downstream_github_issue
+      title: "[PROJECT-LOCAL-CALIBRATION] Derived model routing prior"
+      marker: "[PROJECT-LOCAL-CALIBRATION-STATE-v1]"
+      derived_cache_only: true
+      required_for_task_authority: false
+      unusable_state_fallback: private_cross_project_calibration_then_governance_snapshot
+    private_cross_project_calibration:
+      protocol: docs/model-governance/PRIVATE_EVIDENCE_HUB.md
+      transport: private_governance_fork_issue
+      config_title: "[PRIVATE-EVIDENCE-HUB] Sources"
+      config_marker: "[PRIVATE-EVIDENCE-HUB-CONFIG-v1]"
+      state_title: "[PRIVATE-CROSS-PROJECT-CALIBRATION] Derived routing prior"
+      state_marker: "[PRIVATE-CROSS-PROJECT-CALIBRATION-STATE-v1]"
+      derived_cache_only: true
+      optional_private_fork_capability: true
+      required_for_task_authority: false
+      may_change_model_qualification_automatically: false
+      may_rewrite_governance_core_rules: false
+      unusable_state_fallback: governance_calibration_snapshot
+    reasoning_adapters: config/REASONING_ADAPTERS.yaml
+
+  selection_precedence:
+    - task_override
+    - project_local_calibration
+    - private_cross_project_calibration
+    - governance_calibration_snapshot
+    - accepted_external_benchmark_evidence
+    - bootstrap_seed
+
+  project_local_calibration:
+    protocol: docs/model-governance/PROJECT_LOCAL_CALIBRATION_AUTOMATION.md
+    normalized_outcome_marker: "[PROJECT-CALIBRATION-OUTCOME-v1]"
+    automatic_extractor_template: templates/PROJECT_CALIBRATION_EXTRACTOR.py
+    workflow_template: templates/PROJECT_CALIBRATION_UPDATE.yml
+    same_project_only: true
+    state_is_rebuildable: true
+    state_is_authoritative_task_evidence: false
+    exactly_one_state_issue_required: true
+    usable_only_when_scan_complete_and_well_formed: true
+    missing_or_unusable_state_action: ignore_and_fall_back
+    grouping_dimensions:
+      - role
+      - task_class
+      - risk_level
+      - model_semantic_key
+      - reasoning_semantic_key
+    separate_worker_and_validator_metrics: true
+    single_global_model_score: false
+    recent_comparable_evidence_weighted_more: true
+    material_model_or_reasoning_revision_creates_new_key: true
+    old_semantic_key_is_direct_current_score: false
+    dispatch_route_is_covariate_not_identity: true
+    runtime_profile_is_covariate_not_identity: true
+    internal_delegation_strategy_attribution_when_material: true
+    project_local_prior_may_change_model_qualification_automatically: false
+    project_local_prior_may_rank_already_qualified_candidates: true
+    global_promotion_from_single_project: false
+
+  private_cross_project_calibration:
+    protocol: docs/model-governance/PRIVATE_EVIDENCE_HUB.md
+    input_template: templates/PRIVATE_EVIDENCE_HUB_INPUT.json
+    aggregator_template: templates/PRIVATE_EVIDENCE_HUB_AGGREGATOR.py
+    private_fork_only: true
+    same_governance_repository_issue_storage: true
+    source_project_local_state_required: true
+    source_project_local_state_must_be_usable: true
+    minimum_distinct_sources_per_usable_group: 2
+    exactly_one_state_issue_required_when_enabled: true
+    invalid_or_partial_state_action: ignore_and_fall_back
+    grouping_dimensions:
+      - role
+      - task_class
+      - risk_level
+      - model_semantic_key
+      - reasoning_semantic_key
+    separate_worker_and_validator_metrics: true
+    single_global_model_score: false
+    private_source_identity_allowed_inside_owner_trust_boundary: true
+    automatic_public_upstream_delivery: false
+    private_cross_project_prior_may_change_model_qualification_automatically: false
+    private_cross_project_prior_may_rewrite_core_rules: false
+    private_cross_project_prior_may_rank_already_qualified_candidates: true
+    project_local_calibration_has_higher_precedence: true
+    hub_findings_require_explicit_governance_task_for_core_change: true
+    v1_refresh_mode: agent_or_manual_deterministic
+    v1_cross_repository_workflow_or_token_automation: false
+
+  external_benchmark_evidence:
+    protocol: docs/model-governance/EXTERNAL_MODEL_EVIDENCE.md
+    source_contract: config/EXTERNAL_MODEL_EVIDENCE_SOURCE.yaml
+    accepted_evidence: config/EXTERNAL_MODEL_EVIDENCE.yaml
+    evidence_is_task_result_acceptance_authority: false
+    evidence_may_change_model_qualification_automatically: false
+    evidence_may_bypass_qualification_or_risk_ceiling: false
+    evidence_may_directly_promote_or_demote_production_route: false
+    project_local_and_governance_calibration_have_higher_precedence: true
+    intended_uses:
+      - qualification_priority_prior
+      - matched_trial_priority_prior
+      - lower_precedence_tiebreak_when_other_governance_rules_allow
+    exact_accepted_external_evidence_ref_required_when_materially_used: true
+    later_evidence_revision_does_not_retroactively_change_activated_task_or_decision: true
+    missing_or_unusable_evidence_action: ignore_and_fall_back_to_bootstrap_seed
+    source_count: 1
+    model_keys: 4
+    accepted_observations: 28
+    source_native_task_scores_only: true
+    category_or_overall_composite_allowed: false
+
+  adaptive_routing:
+    protocol: docs/model-governance/ADAPTIVE_ROUTING_AND_FEEDBACK.md
+    central_changes_require_lead_review: true
+    single_project_cannot_auto_promote_global_default: true
+    execution_economy_is_separate_runtime_route_preference: true
+    required_upstream_feedback: false
+
+  challenger_exploration:
+    enabled: true
+    owner: config/MODEL_ROUTING.yaml
+    selection_stage: after_eligibility_before_calibration_ranking
+    deterministic: true
+    random_sampling: false
+    percentage_allocation: false
+    bandit_policy: false
+    next_safe_comparable_opportunity_only: true
+    comparable_group_dimensions:
+      - role
+      - task_class
+      - risk_level
+      - model_semantic_key
+      - reasoning_semantic_key
+    evidence_strength:
+      source: templates/PROJECT_CALIBRATION_EXTRACTOR.py
+      under_evidenced_bands:
+        - insufficient
+        - developing
+      established_removes_exploration_preference: true
+      numeric_thresholds_owned_by_source: true
+    eligibility_gates:
+      - exact_task_or_owner_executor_override
+      - registry_status_role_task_risk_ceiling
+      - required_capability_and_runtime_reachability
+      - independence_requirements
+      - material_task_suitability
+      - safety_permission_and_side_effect_boundaries
+    preference:
+      under_evidenced_challenger_over_established_incumbent: true
+      only_for_next_safe_objectively_verifiable_comparable_opportunity: true
+      established_incumbent_exploration_preference: false
+      multiple_challengers:
+        first: less_developed_comparable_evidence
+        tie_break: existing_routing_prior
+      no_cross_role_global_score: true
+    deferral_reasons:
+      - exact_task_or_owner_executor_override
+      - runtime_or_required_capability_unavailable
+      - material_task_unsuitability
+      - independence_conflict
+      - risk_or_side_effect_boundary
+    status_boundaries:
+      candidate:
+        allowed_routes:
+          - shadow
+          - qualification
+          - evidence_acquisition
+        production_mutation_authority: false
+      provisional:
+        allowed_route: bounded_production_within_registry_ceiling
+        production_mutation_authority: true
+        exploration_may_not_expand_registry_ceiling: true
+    safe_acquisition:
+      preferred_task_classes:
+        - repo_navigation_and_light_maintenance
+        - evidence_only_review
+        - independent_validation
+        - shadow
+      forbidden_work:
+        - high_risk_only_for_evidence
+        - critical_risk_only_for_evidence
+        - payment_or_financial_real_write
+        - irreversible_platform_effect
+        - separately_gated_destructive_or_privileged_action
+        - permission_or_scope_expansion
+      unavailable_or_aborted_before_substantive_execution:
+        positive_sample_credit: false
+        negative_quality_penalty: false
+    owner_lead_boundary:
+      no_second_owner_approval_for_compliant_model_change_after_task_freeze: true
+      exact_task_or_owner_executor_override_wins: true
+      model_selection_does_not_widen_task_scope_permissions_risk_or_write_authority: true
+
+roles:
+  lead_controller:
+    preferred:
+      model: gpt-5.6-sol
+    responsibilities:
+      - architecture
+      - task_decomposition
+      - executor_selection
+      - dispatch_routing
+      - final_acceptance
+      - high_risk_review
+    runtime_requirements:
+      - project_fact_source_access
+      - ability_to_review_results
+    notes:
+      - "Lead model selection does not imply a particular client/runtime."
+      - "Exactly one active Lead Controller exists for a formal task chain."
+      - "Current-session dispatch capability is resolved by Runtime Capability Probe, not here."
+      - "Core implementation is not an intrinsic Lead duty; Lead implementation is allowed only when Dispatch Policy resolves current_session or a higher-precedence bounded exception applies."
+      - "Unless a Task fixes an exact executor, Model Routing yields ranked qualified/suitable candidates; Execution Economy may only break ties among materially equivalent compliant candidates."
+      - "A usable project-local calibration cache may refine the ranking among already qualified candidates; it never becomes Task/Result/Acceptance authority and never auto-promotes central qualification."
+      - "In a user-owned private governance fork, a valid Private Evidence Hub cross-project cache may refine ranking below project-local evidence and above governance/global priors; it never grants qualification or rewrites Core."
+      - "Accepted external benchmark evidence is a lower-precedence prior only; it never grants qualification or production authority."
+
+  bounded_worker:
+    preferred: null
+    runtime_requirements:
+      - task_required_workspace_or_artifact_access
+      - task_required_execution_or_validation_capability
+      - result_sink_access
+    reasoning_policy:
+      selection: lead_controller_per_task
+      adapter: config/REASONING_ADAPTERS.yaml
+      use_task_risk_complexity_and_failure_history: true
+      use_recent_comparable_project_local_evidence_when_usable: true
+      use_private_cross_project_evidence_when_usable_and_local_is_insufficient: true
+    bootstrap_candidates:
+      source: config/BOOTSTRAP_ROUTING_SEED.yaml
+
+  validator:
+    preferred: null
+    runtime_requirements:
+      - authorized_evidence_access
+      - task_required_validation_capability
+      - result_sink_access
+    reasoning_policy:
+      selection: lead_controller_per_task
+      adapter: config/REASONING_ADAPTERS.yaml
+      prefer_deeper_profile_for_high_risk: true
+      use_recent_comparable_project_local_evidence_when_usable: true
+      use_private_cross_project_evidence_when_usable_and_local_is_insufficient: true
+    independence_policy:
+      prefer_different_model_or_independent_context_when_material: true
+      substantive_evidence_isolation_required_when_task_marks_independent: true
+      execution_economy_may_not_waive_independence: true
+    bootstrap_candidates:
+      source: config/BOOTSTRAP_ROUTING_SEED.yaml
+
+escalation:
+  - condition: "worker_failed_or_uncertain"
+    action: "rework_or_raise_reasoning_or_switch_qualified_executor"
+  - condition: "scope_conflict_or_core_change_required"
+    action: "return_to_lead_controller"
+  - condition: "high_or_critical_risk"
+    action: "prefer_independent_validation_and_lead_review"
+  - condition: "project_local_calibration_state_missing_malformed_or_incomplete"
+    action: "ignore_local_cache_and_fall_back_to_governance_prior"
+  - condition: "private_cross_project_calibration_state_missing_malformed_partial_or_disabled"
+    action: "ignore_private_cross_project_cache_and_fall_back_to_governance_prior"
+  - condition: "accepted_external_benchmark_evidence_missing_or_unusable"
+    action: "ignore_external_prior_and_fall_back_to_bootstrap_seed"
+
+invariants:
+  - "model_routing_qualifies_and_ranks_executor_candidates"
+  - "project_local_calibration_is_derived_prior_not_authority"
+  - "project_local_calibration_does_not_auto_change_global_qualification"
+  - "project_local_calibration_requires_exactly_one_state_issue"
+  - "private_evidence_hub_is_optional_private_fork_capability_not_product_module"
+  - "private_cross_project_calibration_is_derived_prior_not_authority"
+  - "project_local_calibration_outranks_private_cross_project_calibration"
+  - "private_cross_project_calibration_requires_two_distinct_sources_per_usable_group"
+  - "private_cross_project_calibration_cannot_auto_change_qualification_or_core_rules"
+  - "worker_and_validator_calibration_remain_separate"
+  - "no_single_global_model_score"
+  - "external_benchmark_evidence_is_prior_not_authority"
+  - "external_benchmark_evidence_cannot_auto_change_qualification"
+  - "exact accepted external evidence ref is required when materially used"
+  - "later evidence revision does not retroactively change an activated task or decision"
+  - "internal_calibration_remains_higher_precedence_than_external_benchmark_evidence"
+  - "execution_economy_tiebreaks_only_materially_equivalent_compliant_choices"
+  - "dispatch_policy_reaches_the_selected_execution_route"
+  - "dispatch_route_is_not_model_identity"
+  - "runtime_channel_name_does_not_select_model"
+  - "runtime_channel_name_does_not_prove_capability"
+  - "challenger_exploration_runs_after_eligibility_gates"
+  - "challenger_exploration_is_deterministic_not_random"
+  - "under_evidenced_challenger_preference_does_not_bypass_status_or_risk_ceiling"
+  - "unavailable_or_aborted_challenger_has_no_sample_credit_or_quality_penalty"
+  - "candidate_exploration_never_grants_production_mutation_authority"
+  - "standard_formal_launch_requires_valid_model_routing_decision"
+  - "startup_card_renderer_validates_resolved_decision_but_does_not_rank_candidates"

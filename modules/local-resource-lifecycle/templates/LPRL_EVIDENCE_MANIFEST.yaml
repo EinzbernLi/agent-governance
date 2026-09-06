@@ -1,0 +1,49 @@
+schema_version: "0.2.4-pilot"
+manifest_id: "evidence-000"
+status: draft # draft|accepted|blocked
+manifest_digest: null # lprl-cjson-v1 / evidence_facts; excludes status, acceptance and this field
+resource_id: null
+component_ids: []
+
+source_identity:
+  repository_or_store_ref: null
+  commit: null
+  tree: null
+  artifact_digest: null # external artifact hash; informational provenance, not an LPRL structured digest
+
+environment_fingerprint:
+  runtime: null
+  dependency_ref: null
+  toolchain_ref: null
+
+test_refs: []
+validator_refs: []
+lead_acceptance_ref: null
+promotion_or_rollback_refs: []
+
+local_artifacts:
+  - artifact_id: null
+    hash: null # external artifact hash; informational evidence, not an LPRL structured digest
+    destination_ref: null
+    retention_purpose: null
+
+unresolved_items: []
+completeness_checks:
+  source_identity_recorded: false
+  required_tests_recorded: false
+  validator_evidence_recorded: false
+  lead_acceptance_recorded: false
+  unique_local_evidence_resolved: false
+
+acceptance:
+  validation_rules_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+  validation_result_ref: null
+  accepted_by_role: null
+  accepted_at: null
+
+notes: null
+
+# EVIDENCE_ACCEPTED requires the canonical validation result to PASS. The
+# manifest digest is over evidence_facts, not the derived status or acceptance
+# object, so acceptance cannot form a digest/validation cycle. This manifest
+# remains fact/evidence provenance; it does not authorize retirement.

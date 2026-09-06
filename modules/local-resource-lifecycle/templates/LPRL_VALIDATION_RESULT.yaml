@@ -1,0 +1,70 @@
+schema_version: "0.2.5-pilot"
+validation_result_id: "lprl-validation-000"
+ruleset_id: "lprl-relational-rules-v0.2.5"
+ruleset_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+created_at: null
+created_by_role: null
+
+subject:
+  kind: null # gate_bundle|evidence_manifest|storage_measurement|storage_derivation|retirement_manifest|migration_batch|reconciliation
+  ref: null
+  validation_input_digest: null # echoed digest from the subject's named input projection
+  validation_input_digest_scope: null # named projection; storage_measurement or storage_derivation_inputs for Storage subjects
+
+control_snapshot:
+  ref: null
+  digest: null
+
+resolved_scope:
+  resource_ids: []
+  component_ids: []
+  exact_physical_target_refs: []
+  topology_edge_ids: []
+  protected_or_shared_owner_refs: []
+  storage_object_ids: []
+  state_data_manifest_refs: []
+  deployment_manifest_refs: []
+  evidence_manifest_refs: []
+
+scope_closure:
+  canonical_scope_source_ref: null
+  missing_required_refs: []
+  extra_unscoped_refs: []
+  same_scope_verified: false
+
+reference_graph:
+  node_refs: []
+  edges:
+    - from_ref: null
+      to_ref: null
+      relation: null
+  cycles_detected: []
+  acyclic: false
+
+rule_results:
+  - rule_id: null
+    status: UNKNOWN # PASS|BLOCKED|FAIL|NOT_APPLICABLE
+    resolved_target_refs: []
+    proof_refs: []
+    missing_refs: []
+    extra_refs: []
+    reason: null
+
+residual_human_decisions:
+  - decision_id: null
+    authority_role: null
+    question: null
+    allowed_values: []
+    selected_value: null
+    evidence_ref: null
+    resolved: false
+
+overall_status: UNKNOWN # PASS|BLOCKED|FAIL
+blockers: []
+result_digest: null # lprl-cjson-v1 / validation_result; excludes this field only
+
+# This is the only machine-readable evaluator output contract.
+# It does not authorize retirement or migration. Gate Bundle consumes technical
+# eligibility; Retirement/Migration remain the action authorities.
+# PASS requires: same frozen snapshot, exact scope closure, acyclic ref graph,
+# all applicable required rules PASS/NOT_APPLICABLE, and no unresolved human decisions.

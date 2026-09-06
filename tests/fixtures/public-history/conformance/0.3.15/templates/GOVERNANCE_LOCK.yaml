@@ -1,0 +1,70 @@
+schema_version: "0.6"
+
+governance:
+  repository: "owner/agent-dev-governance"
+  protocol_version: null
+  pinned_ref: null
+  release_version_path: VERSION
+  release_compatibility_path: GOVERNANCE_RELEASE.yaml
+
+project_policy:
+  local_policy_path: .agent/LOCAL_POLICY.yaml
+  remains_downstream_local: true
+  may_add_or_tighten_constraints: true
+  may_weaken_central_invariants: false
+
+policy_refs:
+  takeover_reconciliation: "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md"
+  governance_currency: "docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md"
+
+modules:
+  lprl:
+    enabled: false
+    repository: "owner/agent-dev-governance"
+    version: null
+    pinned_ref: null
+    # Resolve these paths relative to the exact LPRL pinned_ref. Do not copy
+    # the current release paths onto an older independently pinned module.
+    root_path: null
+    version_path: null
+
+update_policy:
+  # AI-first onboarding asks exactly this Owner choice before completing adoption.
+  # github_native_notify = install the downstream-local GitHub detector template.
+  # manual_pinned        = install no proactive update checker.
+  mode: null  # github_native_notify | manual_pinned
+  owner_choice_required_at_onboarding: true
+  recommended_mode: github_native_notify
+  auto_follow_main: false
+  automatic_adoption_allowed: false
+  automatic_pin_advance_allowed: false
+  normal_takeover_queries_upstream: false
+  prefer_downstream_local_update_signal: true
+  require_compatibility_check_before_pin_change: true
+  explicit_downstream_pin_update_required: true
+  detector_template_path: templates/GOVERNANCE_UPDATE_CHECK.yml
+  installed_workflow_path: .github/workflows/governance-update-check.yml
+  signal_type: github_issue
+  signal_marker: "[GOVERNANCE-UPDATE-SIGNAL]"
+  optional_private_source_secret: GOVERNANCE_SOURCE_TOKEN
+
+privacy:
+  register_project_with_upstream: false
+  send_project_specific_facts_to_upstream: false
+  send_usage_telemetry_to_upstream: false
+  private_source_secret_remains_downstream_local: true
+
+notes:
+  - "接入项目只填写实际采用的治理上游仓库；该仓库是否来自 fork 与被治理项目无关。"
+  - "protocol_version 与 pinned_ref 必须对应项目已经审查并接受的治理版本/commit/tag。"
+  - "AI 自动接入时只询问更新发现方式：github_native_notify 或 manual_pinned；可从目标仓库安全推断的内容不得反复询问 Owner。"
+  - "github_native_notify 将模板复制到 downstream `.github/workflows/governance-update-check.yml`；detector 从本 GOVERNANCE_LOCK 读取 source/version/mode，不维护第二份配置。"
+  - "detector 只在项目自己的 GitHub Issue 中维护 `[GOVERNANCE-UPDATE-SIGNAL]`，发现不同版本或检查失败都不等于采用新版。"
+  - "manual_pinned 不安装主动检查器，也不在普通 takeover/new Task 路径访问上游；只有 Owner 明确要求检查/升级时才查询。"
+  - "无论采用哪种更新模式，都禁止自动采用新规则、自动推进 pin 或自动跟随 main。"
+  - "项目独有规则继续保存在自身 LOCAL_POLICY；上游升级不得静默删除或覆盖项目更严格的规则。"
+  - "LPRL 等独立模块不得被 ordinary governance 升级静默 repin。"
+  - "lprl.root_path 与 lprl.version_path 必须是 exact pinned_ref 有效的路径；保留旧 module pin 时继续使用该 pin 的历史路径，不强制采用当前模块根。"
+  - "公开上游不需要额外凭据；私有自定义治理源若需要 token，只能使用 downstream-local secret，绝不回传上游治理仓库。"
+  - "上游治理不要求 adopter 注册、项目事实回传或 usage telemetry。"
+  - "禁止把模板默认值当成真实治理锁。"

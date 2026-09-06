@@ -1,0 +1,96 @@
+schema_version: "0.4"
+last_updated: "2026-08-27"
+
+# Model qualification / prior registry.
+# This file answers whether a model is eligible/preferred for a role/task class.
+# It does NOT choose native/external dispatch; that is owned by DISPATCH_POLICY.yaml.
+# Ordinary Tasks default to no nested delegation, so outcomes can normally be attributed to the assigned executor.
+# If material internal delegation is explicitly enabled and used, attribution may fall back to execution-strategy level.
+
+models:
+  gpt-5.6-sol:
+    provider: openai
+    status: preferred
+    qualified_roles:
+      - lead_controller
+      - core_implementation
+      - final_acceptance
+      - high_risk_review
+    notes:
+      - "Default Lead Controller prior."
+      - "Runtime/client location does not change model qualification; dispatch is resolved separately."
+
+  gemini-3.7-flash:
+    provider: google
+    status: provisional
+    provisional_roles:
+      independent_evidence_validator:
+        risk_ceiling: medium
+        task_classes:
+          - evidence_only_review
+          - adversarial_challenge
+          - evidence_isolation_validation
+    evidence:
+      prospective_samples: 1
+      retrospective_grade: none
+    notes:
+      - "One prospective evidence-only qualification sample passed strict authorized-evidence isolation and direct GitHub exact-read/result-write transport."
+      - "Useful adversarial desk-review capability is supported provisionally; unsupported facts remained UNKNOWN under the accepted retest."
+      - "Local bounded filesystem/Git inspection is a separate untested capability dimension."
+      - "Do not promote to preferred or high-risk Validator until at least one further independent cross-project/task-class sample passes."
+
+  gemini-3.8-flash:
+    provider: google
+    status: candidate
+    evidence:
+      prospective_samples: 0
+      retrospective_grade: none
+    notes:
+      - "Fresh semantic identity; it inherits no Gemini-3.7-flash status, evidence, calibration or reasoning evidence."
+      - "Candidate authority is limited to shadow, qualification and evidence-acquisition tasks; it has no production mutation authority."
+
+  gpt-5.6-terra:
+    provider: openai
+    status: provisional
+    provisional_roles:
+      validator:
+        risk_ceiling: high
+        task_classes:
+          - bounded_code_review
+          - regression_validation
+          - adversarial_verification
+    evidence:
+      retrospective_grade: retrospective_strong
+      prospective_samples: 0
+    notes:
+      - "Historical auditable evidence supports provisional validator use."
+      - "Preferred status still requires prospective cross-project calibration."
+
+  gpt-5.6-luna:
+    provider: openai
+    status: provisional
+    provisional_roles:
+      bounded_worker:
+        risk_ceiling: medium
+        task_classes:
+          - repo_navigation
+          - bounded_code_edit
+          - test_generation
+          - local_validation
+          - small_scope_debugging
+      validator:
+        risk_ceiling: medium
+        task_classes:
+          - bounded_code_review
+          - regression_validation
+    evidence:
+      retrospective_grade: retrospective_strong
+      prospective_samples: 0
+    notes:
+      - "Historical auditable evidence supports provisional bounded-worker/validator use."
+      - "Past complex/high-risk rework prevents automatic high-risk preferred promotion."
+
+invariants:
+  - "model_qualification != dispatch_route"
+  - "retrospective_evidence != prospective_calibration"
+  - "single_project_result_does_not_auto_promote_global_default"

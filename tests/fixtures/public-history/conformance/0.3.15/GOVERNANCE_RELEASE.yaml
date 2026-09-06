@@ -1,0 +1,179 @@
+schema_version: "0.9"
+
+ordinary_governance:
+  version: "0.3.15"
+  change_class: project_governance_conformance_and_local_deployment_enforcement
+  authority_model: accepted_main_plus_VERSION
+  compatibility_contract_path: GOVERNANCE_RELEASE.yaml
+
+update_discovery:
+  adopter_choice_required: true
+  supported_modes:
+    - github_native_notify
+    - manual_pinned
+  recommended_mode: github_native_notify
+  normal_takeover_requires_upstream_probe: false
+  automatic_adoption_allowed: false
+  automatic_pin_advance_allowed: false
+  auto_follow_main_allowed: false
+  detector_template_path: templates/GOVERNANCE_UPDATE_CHECK.yml
+  detector_reads_governance_lock: true
+  signal_type: downstream_github_issue
+  signal_marker: "[GOVERNANCE-UPDATE-SIGNAL]"
+  public_source_requires_extra_credentials: false
+  private_source_optional_downstream_secret: GOVERNANCE_SOURCE_TOKEN
+
+adoption:
+  ai_first_default: true
+  manual_installer_required: false
+  accepted_pin_remains_authority_until_explicit_change: true
+  compatibility_review_required_before_pin_change: true
+  explicit_downstream_pin_update_required: true
+  prior_pin_inflight_task_behavior: governed_by_the_projects_current_accepted_pin_and_local_policy
+
+project_policy_layering:
+  project_local_policy_remains_local: true
+  local_policy_may_add_or_tighten_constraints: true
+  local_policy_may_weaken_central_invariants: false
+  task_may_satisfy_explicit_local_authorization_gates: true
+  task_may_silently_override_local_policy: false
+
+takeover_resume:
+  takeover_only_effect: activate_reconcile_recommend_wait
+  post_reconciliation_state: AWAIT_OWNER_CONTINUE
+  resume_target_is_execution_authorization: false
+  later_explicit_owner_turn_required: true
+  takeover_phrase_continue_satisfies_later_turn: false
+  separate_explicit_bounded_initial_instruction_is_takeover_only: false
+  owner_continue_requires_current_fact_and_scope_reread: true
+
+execution_economy:
+  policy_path: config/DISPATCH_POLICY.yaml
+  supported_profiles:
+    - lead_direct_preferred
+    - native_delegate_preferred
+    - balanced
+  fallback_profile: balanced
+  project_local_override_path: templates/LOCAL_POLICY.yaml
+  project_local_override_field: execution_economy.profile
+  runtime_hints_are_capability_proof: false
+  runtime_hints_are_model_qualification_proof: false
+  capability_probe_outranks_profile_hint: true
+  task_safety_model_local_runtime_and_independence_constraints_outrank_profile: true
+  owner_relay_for_quota_only_when_direct_compliant: false
+  precise_token_accounting_required: false
+  usage_telemetry_required: false
+  default_runtime_hints:
+    web_interactive: lead_direct_preferred
+    codex_native_subagents: native_delegate_preferred
+    unknown_or_other: balanced
+  material_dispatch_decision:
+    required_fields: [profile, native_dispatch_available, work_suitable_for_native_delegate, selected_route, bypass_reason]
+    capability_suitability_route_are_separate: true
+    native_preferred_direct_bypass_requires_bounded_reason: true
+    quota_saving_alone_is_not_a_valid_bypass_reason: true
+
+delegation_controls:
+  nested_delegation_default_allowed: false
+  nested_delegation_opt_in_only: true
+  parent_remains_accountable: true
+  canonical_lifecycle: [ROUTE_RESOLVED, TASK_PACKAGE_FROZEN, DISPATCHED, CHILD_RUNNING, PARENT_WAITING, COMPLETED, BLOCKED, NEEDS_ATTENTION, ABORTED, RESULT_READ, LEAD_INTEGRATION, VALIDATION_ACCEPTANCE]
+  default_wait_mode: event_or_blocking_or_long_event
+  while_child_running_no_substantive_progress_inspection: true
+  fallback_without_event_wait: bounded_low_frequency_terminal_status_only
+  fallback_status_must_not_fetch_substantive_output: true
+  terminal_result_read_required_before_lead_integration: true
+  validator_material_midflight_substantive_intervention_contaminates: true
+  fresh_independent_validation_required_when_contaminated: true
+
+conformance:
+  policy_path: config/CONFORMANCE_POLICY.yaml
+  protocol_path: docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+  input_template_path: templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+  result_template_path: templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+  checker_path: templates/GOVERNANCE_CONFORMANCE_CHECK.py
+  evaluation_modes: [central_governance, downstream_project]
+  overall_statuses: [CONFORMANT, RECONCILIATION_REQUIRED, BLOCKED]
+  local_action_decisions: [ALLOW, BLOCK]
+  derived_read_only_evidence: true
+  becomes_authority_store: false
+  network_required: false
+  automatic_pin_advance_allowed: false
+  local_action_execution_allowed: false
+  bounded_drift_triggers_only: true
+  console_consumption_optional_read_only: true
+
+project_local_calibration:
+  evidence_source: same_project_durable_task_result_validation_acceptance_facts
+  normalized_outcome_marker: "[PROJECT-CALIBRATION-OUTCOME-v1]"
+  outcome_template_path: templates/PROJECT_CALIBRATION_OUTCOME.json
+  extractor_template_path: templates/PROJECT_CALIBRATION_EXTRACTOR.py
+  workflow_template_path: templates/PROJECT_CALIBRATION_UPDATE.yml
+  downstream_extractor_path: .agent/tools/project-calibration.py
+  downstream_workflow_path: .github/workflows/project-calibration.yml
+  state_transport: downstream_github_issue
+  state_title: "[PROJECT-LOCAL-CALIBRATION] Derived model routing prior"
+  state_marker: "[PROJECT-LOCAL-CALIBRATION-STATE-v1]"
+  state_issue_cardinality_required: exactly_one
+  state_is_derived_cache_only: true
+  state_is_task_result_acceptance_authority: false
+  deleting_state_deletes_authoritative_evidence: false
+  rebuildable_from_durable_facts: true
+  automatic_outcome_extraction: true
+  new_github_project_default_enabled: true
+  mandatory_owner_onboarding_question: false
+  explicit_project_opt_out_allowed: true
+  project_policy_constraints_outrank_default_enablement: true
+  model_attribution_dimensions:
+    - role
+    - task_class
+    - risk_level
+    - model_semantic_key
+    - reasoning_semantic_key
+  worker_validator_aggregates_separate: true
+  single_global_model_score_allowed: false
+  recent_comparable_evidence_weighted_more: true
+  semantic_revision_creates_new_key: true
+  material_internal_delegation_direct_model_attribution_allowed: false
+  dispatch_route_is_covariate_not_model_identity: true
+  runtime_profile_is_covariate_not_model_identity: true
+  incomplete_or_malformed_scan_usable_for_routing: false
+  missing_or_unusable_state_blocks_task_authority: false
+  missing_or_unusable_state_fallback: governance_calibration_snapshot
+  required_latency_or_cost_telemetry: false
+  upstream_export_default: false
+  central_telemetry_required: false
+  adopter_registration_required: false
+
+modules:
+  lprl:
+    independent_pin: true
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+    version: "0.2.5-pilot"
+    semantic_change: true
+    semantic_change_scope: scoped_topology_completeness_for_gate_evaluation
+    semantic_change_digest_contract: unchanged_lprl_cjson_v1_projections
+    ordinary_governance_upgrade_does_not_silently_repin_module: true
+
+privacy:
+  downstream_project_registry_present: false
+  downstream_project_specific_facts_allowed: false
+  downstream_fact_ingest_required: false
+  adopter_registration_required: false
+  usage_telemetry_required: false
+  phone_home_required: false
+  optional_private_source_secret_remains_downstream_local: true
+
+notes:
+  - "A takeover-only Owner message activates/reconciles the Lead and produces an advisory RESUME_TARGET, then waits in AWAIT_OWNER_CONTINUE; its embedded continue wording does not authorize execution."
+  - "Normal project adoption is AI-first: the AI reads the governance source and target repository, asks the Owner only for unresolved choices, and writes the minimum downstream governance state."
+  - "Governance update discovery remains independent from project-local model calibration; neither mechanism adopts governance or changes model qualification by itself."
+  - "Execution Economy remains a runtime route-preference layer; dispatch/runtime observations are calibration covariates and are never model identity."
+  - "Terminal Lead Acceptance may carry a machine-readable calibration outcome derived from durable facts; this is factual normalization, not a human subjective model rating."
+  - "The downstream calibration Issue is a rebuildable routing-prior cache only. Task, Result, Validation and Lead Acceptance remain the evidence authority."
+  - "Worker and Validator evidence is aggregated separately by role/task-class/risk/model-semantic-key/reasoning-semantic-key; this release defines no single global model score."
+  - "Material model or reasoning semantic revisions form new calibration keys; older keys remain separate weak priors rather than direct current evidence."
+  - "External adopter calibration remains local by default. PROJECT_ROUTING_FEEDBACK is explicit opt-in export only; no automatic upstream feedback is introduced."
+  - "The current LPRL module root and version path remain modules/local-resource-lifecycle and modules/local-resource-lifecycle/VERSION; LPRL semantic version remains 0.2.5-pilot."
+  - "This manifest is compatibility metadata, not a second governance authority store."

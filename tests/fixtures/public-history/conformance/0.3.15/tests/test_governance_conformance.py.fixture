@@ -1,0 +1,388 @@
+import hashlib
+import importlib.util
+import json
+import shutil
+import subprocess
+import sys
+import tempfile
+import tarfile
+import unittest
+from pathlib import Path
+
+
+REPO = Path(__file__).resolve().parents[1]
+SCRIPT = REPO / "templates" / "GOVERNANCE_CONFORMANCE_CHECK.py"
+POLICY = REPO / "config" / "CONFORMANCE_POLICY.yaml"
+FROZEN_BASELINE_TREE = "1f41343ec5d2348cd3ef645230647c25fdd7b969"
+
+SPEC = importlib.util.spec_from_file_location("governance_conformance", SCRIPT)
+CHECKER = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(CHECKER)
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def git(root, *args):
+    completed = subprocess.run(
+        ["git", "-C", str(root), *args],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def write(path, text):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).write_text(text.strip() + "\n", encoding="utf-8")
+
+
+def run_checker(root, policy, input_path):
+    completed = subprocess.run(
+        [sys.executable, str(SCRIPT), "--root", str(Path(root).resolve()), "--policy", str(Path(policy).resolve()), "--input", str(Path(input_path).resolve())],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    return completed.returncode, json.loads(completed.stdout)
+
+
+def tree_snapshot(root):
+    return {
+        path.relative_to(root).as_posix(): digest(path)
+        for path in sorted(Path(root).rglob("*"))
+        if path.is_file() and ".git" not in path.parts
+    }
+
+
+class ConformanceFixture(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.base = Path(self.temp.name)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def central_fixture(self):
+        root = self.base / "central"
+        policy = CHECKER.load_yaml_subset(POLICY)
+        paths = set(policy["central_governance"]["required_paths"])
+        paths.add(policy["independent_modules"]["lprl"]["version_path"])
+        for relative in paths:
+            source = REPO / relative
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "fixture")
+        return root
+
+    def central_input(self, root, name="central-input.yaml"):
+        commit = git(root, "rev-parse", "HEAD")
+        tree = git(root, "rev-parse", "HEAD^{tree}")
+        input_path = self.base / name
+        write(
+            input_path,
+            f'''\
+schema_version: "0.1"
+mode: central_governance
+expected_identity:
+  commit: {commit}
+  tree: {tree}
+''',
+        )
+        return input_path
+
+    def accepted_baseline_fixture(self):
+        root = self.base / "accepted-baseline"
+        root.mkdir(parents=True)
+        archive = self.base / "accepted-baseline.tar"
+        subprocess.run(
+            ["git", "-C", str(REPO), "archive", "--format=tar", "HEAD^", "-o", str(archive)],
+            check=True,
+            capture_output=True,
+        )
+        with tarfile.open(archive, "r") as bundle:
+            bundle.extractall(root, filter="data")
+        git(root, "init", "-q")
+        git(root, "config", "user.name", "Conformance Fixture")
+        git(root, "config", "user.email", "fixture@example.invalid")
+        git(root, "add", ".")
+        git(root, "commit", "-q", "-m", "accepted 0.3.14 baseline")
+        self.assertEqual(git(root, "rev-parse", "HEAD^{tree}"), FROZEN_BASELINE_TREE)
+        return root
+
+    def baseline_replay_input(self, root):
+        commit = git(root, "rev-parse", "HEAD")
+        tree = git(root, "rev-parse", "HEAD^{tree}")
+        input_path = self.base / "accepted-baseline-input.yaml"
+        write(
+            input_path,
+            f'''\
+schema_version: "0.1"
+mode: central_governance
+central_profile: accepted_0_3_14_replay
+expected_identity:
+  commit: {commit}
+  tree: {tree}
+''',
+        )
+        return input_path
+
+    def downstream_fixture(self):
+        root = self.base / "downstream"
+        state = root / ".agent" / "PROJECT_STATE.md"
+        write(state, "# Project State\n\nCurrent durable task facts are supplied separately.")
+        write(
+            root / ".agent" / "GOVERNANCE_LOCK.yaml",
+            '''\
+schema_version: "0.6"
+governance:
+  repository: owner/governance
+  protocol_version: "0.3.14"
+  pinned_ref: governance-pin-1
+project_policy:
+  may_weaken_central_invariants: false
+modules:
+  lprl:
+    enabled: true
+    version: "0.2.4-pilot"
+    pinned_ref: module-pin-old-valid
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+update_policy:
+  auto_follow_main: false
+  automatic_adoption_allowed: false
+  automatic_pin_advance_allowed: false
+''',
+        )
+        write(
+            root / ".agent" / "LOCAL_POLICY.yaml",
+            '''\
+schema_version: "0.4"
+local_resource_policy:
+  mode: tracking
+  project_root:
+    source: owner_supplied
+  allow_agent_to_choose_or_relocate_project_root: false
+  allow_write_outside_owner_supplied_project_root: false
+  tracking_authorizes_migration_or_cleanup: false
+''',
+        )
+        return root
+
+    def downstream_input(self, root, *, update=False, copied_weakened=False, action=None, task_ref="github:owner/project#7", module_compatible=True):
+        action_text = ""
+        if action is not None:
+            action_text = f'''\
+local_action:
+  project: demo
+  task_ref: {action.get("task_ref", task_ref)}
+  resource_type: {action.get("resource_type", "Workspace")}
+  action: {action.get("action", "reuse")}
+  authority:
+    governance_pin_valid: {str(action.get("governance_pin_valid", True)).lower()}
+    local_policy_valid: {str(action.get("local_policy_valid", True)).lower()}
+    task_authorized: {str(action.get("task_authorized", True)).lower()}
+    action_specific_authorization: {str(action.get("action_specific_authorization", False)).lower()}
+  root:
+    path: "{root.as_posix()}"
+    source: {action.get("root_source", "owner_supplied")}
+    owner_supplied_or_confirmed: {str(action.get("owner_root", True)).lower()}
+    verified: {str(action.get("verified", True)).lower()}
+    within_boundary: {str(action.get("within_boundary", True)).lower()}
+  topology:
+    facts_current: {str(action.get("facts_current", True)).lower()}
+    resource_class_known: {str(action.get("resource_class_known", True)).lower()}
+    shared_resource: {str(action.get("shared_resource", False)).lower()}
+    protected_runtime: {str(action.get("protected_runtime", False)).lower()}
+    owner_set_complete: {str(action.get("owner_set_complete", False)).lower()}
+'''
+        input_path = self.base / f"downstream-{len(list(self.base.glob('downstream-*.yaml')))}.yaml"
+        write(
+            input_path,
+            f'''\
+schema_version: "0.1"
+mode: downstream_project
+project:
+  name: demo
+  root: "{root.as_posix()}"
+  root_source: owner_supplied
+  governance_lock_path: .agent/GOVERNANCE_LOCK.yaml
+  local_policy_path: .agent/LOCAL_POLICY.yaml
+  project_state_path: .agent/PROJECT_STATE.md
+durable_facts:
+  lead_ref: github:owner/project#1@lead
+  lead_digest: lead-digest
+  task_ref: {task_ref if task_ref is not None else 'null'}
+  task_digest: task-digest
+  lead_current: true
+  task_current: true
+  project_state_digest: {digest(root / '.agent' / 'PROJECT_STATE.md')}
+  topology_digest: topology-digest
+  topology_facts_current: true
+  copied_governance_semantics_weakened: {str(copied_weakened).lower()}
+  accepted_governance_pin: governance-pin-1
+  governance_pin_valid: true
+  accepted_module_pin: module-pin-old-valid
+  module_compatible: {str(module_compatible).lower()}
+  update_available: {str(update).lower()}
+{action_text}''',
+        )
+        return input_path
+
+
+class QualificationTests(ConformanceFixture):
+    def test_q1_candidate_self_conformance_healthy(self):
+        root = self.central_fixture()
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_q2_metadata_contradictions_fail_closed(self):
+        baseline = self.accepted_baseline_fixture()
+        code, result = run_checker(baseline, POLICY, self.baseline_replay_input(baseline))
+        self.assertEqual(code, 2)
+        self.assertIn("MODULE_NOTE_PIN_CONTRADICTION", {item["code"] for item in result["findings"]})
+
+        root = self.central_fixture()
+        write(root / "VERSION", "9.9.9")
+        git(root, "add", "VERSION")
+        git(root, "commit", "-q", "-m", "version mismatch")
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", self.central_input(root, "version-mismatch.yaml"))
+        self.assertNotEqual(code, 0)
+        self.assertIn("VERSION_POLICY_MISMATCH", {item["code"] for item in result["findings"]})
+
+    def test_exact_candidate_identity_rejects_dirty_worktree(self):
+        root = self.central_fixture()
+        input_path = self.central_input(root)
+        (root / "README.md").write_text("dirty\n", encoding="utf-8")
+        code, result = run_checker(root, root / "config/CONFORMANCE_POLICY.yaml", input_path)
+        self.assertEqual(code, 3)
+        self.assertIn("CANDIDATE_WORKTREE_DIRTY", {item["code"] for item in result["findings"]})
+
+    def test_q3_stable_older_independent_pin_is_advisory(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, update=True))
+        self.assertEqual(code, 0)
+        self.assertTrue(result["update_available"])
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_q4_broken_module_pin_blocks(self):
+        root = self.downstream_fixture()
+        lock = root / ".agent" / "GOVERNANCE_LOCK.yaml"
+        lock.write_text(lock.read_text(encoding="utf-8").replace("pinned_ref: module-pin-old-valid", "pinned_ref: null"), encoding="utf-8")
+        code, result = run_checker(root, POLICY, self.downstream_input(root))
+        self.assertEqual(code, 3)
+        codes = {item["code"] for item in result["findings"]}
+        self.assertTrue({"MODULE_PIN_INCOMPLETE", "MODULE_PIN_CONFLICT"} <= codes)
+
+        healthy_root = self.downstream_fixture()
+        code, result = run_checker(healthy_root, POLICY, self.downstream_input(healthy_root, module_compatible=False))
+        self.assertEqual(code, 3)
+        self.assertIn("MODULE_INCOMPATIBLE", {item["code"] for item in result["findings"]})
+
+    def test_q5_healthy_downstream_project(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["overall_status"], "CONFORMANT")
+
+    def test_q6_runnable_but_governance_drifted(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, copied_weakened=True))
+        self.assertEqual(code, 3)
+        self.assertIn("COPIED_GOVERNANCE_WEAKENED", {item["code"] for item in result["findings"]})
+
+    def test_q7_authorized_workspace_action_allows_without_mutation(self):
+        root = self.downstream_fixture()
+        before = tree_snapshot(root)
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action={}))
+        self.assertEqual(code, 0)
+        self.assertEqual(result["local_action"]["decision"], "ALLOW")
+        self.assertEqual(before, tree_snapshot(root))
+
+    def test_q8_guessed_root_or_missing_task_blocks(self):
+        root = self.downstream_fixture()
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action={"root_source": "cwd"}, task_ref=None))
+        self.assertEqual(code, 3)
+        codes = {item["code"] for item in result["findings"]}
+        self.assertIn("ACTION_ROOT_GUESSED", codes)
+        self.assertIn("DURABLE_FACT_REQUIRED", codes)
+
+    def test_q9_protected_deployment_state_data_guard(self):
+        root = self.downstream_fixture()
+        action = {"resource_type": "Deployment", "action": "modify", "protected_runtime": True}
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action=action))
+        self.assertEqual(code, 3)
+        self.assertEqual(result["local_action"]["decision"], "BLOCK")
+        self.assertIn("PROTECTED_OR_SHARED_ACTION_BLOCKED", result["local_action"]["reasons"])
+
+    def test_q10_unknown_resource_is_non_mutating_block(self):
+        root = self.downstream_fixture()
+        before = tree_snapshot(root)
+        action = {"resource_type": "Unknown", "resource_class_known": False}
+        code, result = run_checker(root, POLICY, self.downstream_input(root, action=action))
+        self.assertEqual(code, 3)
+        self.assertIn("UNKNOWN_RESOURCE", result["local_action"]["reasons"])
+        self.assertTrue(any("Inventory and classify" in item for item in result["advisories"]))
+        self.assertEqual(before, tree_snapshot(root))
+
+    def test_q11_all_bounded_drift_triggers_no_daemon(self):
+        policy = CHECKER.load_yaml_subset(POLICY)
+        self.assertEqual(len(policy["drift_triggers"]), 7)
+        self.assertFalse(policy["side_effects"]["network_calls_allowed"])
+        self.assertFalse(policy["side_effects"]["central_registry_allowed"])
+        self.assertFalse(policy["side_effects"]["telemetry_or_phone_home_allowed"])
+
+    def test_q12_thin_launcher_presentation(self):
+        task_spec = (REPO / "docs/task-package/TASK_PACKAGE_SPEC.md").read_text(encoding="utf-8")
+        self.assertIn("stable copy-oriented", task_spec)
+        self.assertIn("editable drafting surface", task_spec)
+        self.assertIn("durable Task remains authority", task_spec)
+
+    def test_duplicate_keys_fail_closed_and_output_is_deterministic(self):
+        root = self.downstream_fixture()
+        malformed = self.base / "duplicate.yaml"
+        write(malformed, 'schema_version: "0.1"\nmode: downstream_project\nmode: central_governance')
+        first_code, first = run_checker(root, POLICY, malformed)
+        second_code, second = run_checker(root, POLICY, malformed)
+        self.assertEqual((first_code, first), (second_code, second))
+        self.assertEqual(first_code, 3)
+        self.assertEqual(first["overall_status"], "BLOCKED")
+
+    def test_checker_has_no_network_dependency_and_policy_freezes_surface(self):
+        source = SCRIPT.read_text(encoding="utf-8")
+        for forbidden in ("import socket", "import urllib", "import requests", "http.client", "urlopen("):
+            self.assertNotIn(forbidden, source)
+        policy = CHECKER.load_yaml_subset(POLICY)
+        expected = {
+            "config/CONFORMANCE_POLICY.yaml",
+            "docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md",
+            "templates/GOVERNANCE_CONFORMANCE_INPUT.yaml",
+            "templates/GOVERNANCE_CONFORMANCE_RESULT.yaml",
+            "templates/GOVERNANCE_CONFORMANCE_CHECK.py",
+            "tests/test_governance_conformance.py",
+            "README.md",
+            "VERSION",
+            "GOVERNANCE_RELEASE.yaml",
+            "CHANGELOG.md",
+            "docs/project-adoption/PROJECT_ADOPTION.md",
+            "docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md",
+            "docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md",
+            "templates/GOVERNANCE_LOCK.yaml",
+            "templates/LOCAL_POLICY.yaml",
+            "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md",
+            "docs/task-package/TASK_PACKAGE_SPEC.md",
+            "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md",
+        }
+        self.assertEqual(set(policy["maximum_write_surface"]), expected)
+
+
+if __name__ == "__main__":
+    unittest.main()

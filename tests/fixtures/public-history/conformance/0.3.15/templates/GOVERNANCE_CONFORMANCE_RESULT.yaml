@@ -1,0 +1,19 @@
+schema_version: "0.1"
+evaluator_version: "0.3.15"
+mode: central_governance
+evaluated_authorities:
+  - ref: VERSION
+    digest_or_exact_identity: null
+overall_status: BLOCKED
+internal_drift: DRIFT_BLOCKING
+update_available: false
+findings:
+  - code: TEMPLATE_NOT_EVALUATED
+    severity: required_block
+    authority_ref: templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+    explanation: "This file is a shape example, not an evaluated Result."
+advisories: []
+local_action:
+  requested: false
+  decision: NOT_REQUESTED
+  reasons: []

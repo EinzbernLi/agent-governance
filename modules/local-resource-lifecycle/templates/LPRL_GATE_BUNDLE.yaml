@@ -1,0 +1,51 @@
+schema_version: "0.2.4-pilot"
+gate_bundle_id: "gate-bundle-000"
+control_snapshot_ref: null
+control_snapshot_digest: null
+resource_ids: []
+component_ids: []
+exact_physical_target_refs: []
+
+# Digest over decision inputs only: snapshot/scope/check status+proof refs/required_checks/blockers.
+# Excludes derived status, validation_result_ref, acceptance metadata and full-record digest.
+validation_input_digest: null # lprl-cjson-v1 / gate_validation_inputs; excludes derived/final metadata
+status: BLOCKED # PASS|BLOCKED|FAIL; only GATE_BUNDLE_PASS may make PASS valid
+
+checks:
+  registry_identity: {status: UNKNOWN, proof_ref: null}
+  component_topology: {status: UNKNOWN, proof_ref: null}
+  source_unique_value: {status: UNKNOWN, proof_ref: null}
+  writer_quiescence: {status: UNKNOWN, proof_ref: null}
+  git_topology: {status: UNKNOWN, proof_ref: null}
+  state_data: {status: UNKNOWN, proof_ref: null}
+  deployment_rollback: {status: UNKNOWN, proof_ref: null}
+  evidence_manifest: {status: UNKNOWN, proof_ref: null}
+  active_dependencies: {status: UNKNOWN, proof_ref: null}
+  reconstructability_or_end_of_need: {status: UNKNOWN, proof_ref: null}
+  storage_ledger: {status: UNKNOWN, proof_ref: null}
+  retention_holds: {status: UNKNOWN, proof_ref: null}
+
+required_checks:
+  - registry_identity
+  - component_topology
+  - source_unique_value
+  - writer_quiescence
+  - git_topology
+  - state_data
+  - deployment_rollback
+  - evidence_manifest
+  - active_dependencies
+  - reconstructability_or_end_of_need
+  - storage_ledger
+  - retention_holds
+
+validation_rules_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+validation_result_ref: null
+blockers: []
+accepted_by_role: null
+accepted_at: null
+gate_bundle_digest: null # lprl-cjson-v1 / gate_full_record; excludes this field only
+
+# Technical eligibility only. The validation result must resolve the exact same
+# resource/component/target scope as the frozen Control Snapshot and emit all
+# rule outcomes. Retirement/Migration remain the only action authorities.

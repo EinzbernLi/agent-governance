@@ -1,0 +1,32 @@
+schema_version: "0.2"
+evaluator_version: "0.3.17"
+mode: central_governance
+evaluated_authorities:
+  - ref: VERSION
+    digest_or_exact_identity: null
+overall_status: BLOCKED
+internal_drift: DRIFT_BLOCKING
+update_available: false
+findings:
+  - code: TEMPLATE_NOT_EVALUATED
+    severity: required_block
+    authority_ref: templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+    explanation: "This file is a shape example, not an evaluated Result."
+advisories: []
+metrics:
+  baseline_hot_path_required_surfaces: 4
+  baseline_hot_path_required_bytes: 46772
+  hot_path_required_surfaces: 3
+  hot_path_required_bytes: null
+  material_normative_semantics_with_multiple_owners: 0
+  runtime_profiles_containing_full_core_copies: 0
+  current_tree_retired_or_collapsed_surfaces: 6
+  net_authority_surface: decrease
+  runtime_placement_local_to_codex_remote_to_web: true
+  codex_worker_native_delegation_default_allowed: true
+  quota_economy_without_qualification_bypass: true
+  child_scope_write_and_recursion_boundaries: true
+local_action:
+  requested: false
+  decision: NOT_REQUESTED
+  reasons: []

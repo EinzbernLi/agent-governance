@@ -1,0 +1,108 @@
+schema_version: "0.2"
+last_updated: "2026-08-27"
+
+# 说明：
+# - 本文件记录 reasoning profile 到模型/通道原生档位的映射与有序档位证据。
+# - 不同厂商同名 reasoning label 不代表能力等价。
+# - native level 的高低比较只能在同一 adapter 的 ordered_native_levels 内进行。
+# - Executor identity compliance 与 reasoning compliance 由 config/EXECUTOR_COMPLIANCE.yaml 管理。
+
+profiles:
+  economy:
+    intent: "优先效率，适用于低风险、机械、容易验证的任务"
+  balanced:
+    intent: "普通任务的平衡投入"
+  deep:
+    intent: "复杂代码、多文件、疑难调试或高风险验证"
+  max_available:
+    intent: "使用当前模型与当前执行通道实际可用的最高合适原生档位"
+
+adapters:
+  gpt_family_five_level_example:
+    status: provisional
+    ordered_native_levels:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    mappings:
+      economy:
+        preferred_level: low
+        recommended_policy: preferred
+        minimum_level: low
+        allow_escalation: true
+      balanced:
+        preferred_level: medium
+        recommended_policy: preferred
+        minimum_level: medium
+        allow_escalation: true
+      deep:
+        preferred_level: high
+        recommended_policy: preferred
+        minimum_level: high
+        allow_escalation: true
+        common_escalation_level: xhigh
+      max_available:
+        recommended_policy: max_available
+    notes:
+      - "这是五档 GPT 类模型的通用示例映射，不绑定具体项目或具体型号。"
+      - "deep 的 high -> xhigh 只表示同一 adapter 内允许的向上升级示例，不表示 high/xhigh 与其他厂商档位等价。"
+      - "是否允许 max、是否设置 maximum_level 仍由具体 Task Contract 决定。"
+
+  gemini_family_three_level_example:
+    status: provisional
+    ordered_native_levels:
+      - low
+      - medium
+      - high
+    mappings:
+      economy:
+        preferred_level: low
+        recommended_policy: preferred
+        minimum_level: low
+        allow_escalation: true
+      balanced:
+        preferred_level: medium
+        recommended_policy: preferred
+        minimum_level: medium
+        allow_escalation: true
+      deep:
+        preferred_level: high
+        recommended_policy: preferred
+        minimum_level: high
+        allow_escalation: false
+      max_available:
+        recommended_policy: max_available
+    notes:
+      - "这是三档 Gemini 类模型的通用示例映射。"
+      - "由于最高档就是 high，deep 与 max_available 可能落到同一原生档位，但任务意图仍不同。"
+
+comparison_policy:
+  compare_only_within_same_adapter: true
+  infer_order_from_names: false
+  require_ordered_native_levels_for_minimum_or_escalation: true
+  missing_ordering_action: "use exact constraint or establish adapter evidence first"
+
+channel_overrides:
+  web_client:
+    notes:
+      - "网页入口可能只暴露模型原生档位的一个子集。"
+      - "实际最大可用档位必须以当前客户端为准，不在治理层永久写死。"
+      - "如果 native level 不可见，Task 必须根据 compliance policy 决定 BLOCKED 还是显式允许 unverifiable。"
+
+  desktop_client:
+    notes:
+      - "桌面入口可能暴露与网页端不同的 reasoning 档位。"
+
+  desktop_agent:
+    required_capabilities:
+      - local_workspace_write
+      - local_execution
+      - local_validation
+    notes:
+      - "适用于需要修改本机工作区并运行本地验证的 Worker / Validator 任务。"
+
+compliance_reference:
+  policy_registry: config/EXECUTOR_COMPLIANCE.yaml
+  protocol: docs/protocol/EXECUTOR_REASONING_COMPLIANCE.md

@@ -1,0 +1,758 @@
+schema_version: "0.2.5-pilot"
+ruleset_id: "lprl-relational-rules-v0.2.5"
+status: replay_candidate
+validation_result_schema_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RESULT.yaml"
+
+canonical_digest_profile:
+  id: lprl-cjson-v1
+  version: "1"
+  source_parse: safe_yaml_to_json_compatible_model
+  duplicate_mapping_keys: reject
+  allowed_scalars: ["null", "boolean", "integer", "string"]
+  rejected_scalars: ["custom_tag", "timestamp", "date", "binary", "set", "float", "nan", "infinity"]
+  projection_semantics: remove_excluded_paths
+  canonical_json:
+    sort_keys: true
+    ensure_ascii: false
+    separators: [",", ":"]
+    allow_nan: false
+    trailing_newline: false
+    unicode_normalization: none
+  arrays: authored_semantic_order
+  digest_algorithm: sha256
+  digest_encoding: lowercase_hex_64
+
+# Paths are dot-separated; [*] means every array element and $ means the
+# complete parsed record. Exclusions are removed before canonical encoding.
+digest_projections:
+  topology_inventory:
+    include: ["topology_inventory.*"]
+    exclude: ["topology_inventory.inventory_digest"]
+    output: resource_registry.topology_inventory.inventory_digest
+  registry_facts:
+    include: ["schema_version", "project_id", "topology_inventory.*", "physical_containers", "resources[*].*", "topology_edges"]
+    exclude: ["digests", "registry_status", "last_verified", "verification_basis", "resources[*].lifecycle_status", "resources[*].accepted_gate_bundle_ref", "topology_inventory.inventory_digest"]
+    output: resource_registry.digests.fact_digest
+  registry_full_record:
+    include: ["$"]
+    exclude: ["digests.full_record_digest"]
+    output: resource_registry.digests.full_record_digest
+  state_data_manifest:
+    include: ["$"]
+    exclude: ["manifest_digest"]
+    output: state_data_manifest.manifest_digest
+  deployment_manifest:
+    include: ["$"]
+    exclude: ["manifest_digest"]
+    output: deployment_manifest.manifest_digest
+  evidence_facts:
+    include: ["$"]
+    exclude: ["manifest_digest", "status", "acceptance"]
+    output: evidence_manifest.manifest_digest
+  storage_measurement:
+    include: ["schema_version", "ledger_id", "measurement.*", "objects", "measurement_summary"]
+    exclude: ["measurement.measurement_digest", "ledger_status", "derived_reclaimable", "validation", "rules"]
+    output: storage_ledger.measurement.measurement_digest
+  storage_derivation_inputs:
+    include: ["schema_version", "ledger_id", "measurement.measurement_digest", "derived_reclaimable.control_snapshot_ref", "derived_reclaimable.control_snapshot_digest", "derived_reclaimable.gate_bundle_refs", "derived_reclaimable.contributing_storage_object_ids", "derived_reclaimable.currently_safe_reclaimable_bytes", "derived_reclaimable.derivation_ref"]
+    exclude: ["derived_reclaimable.derivation_digest", "derived_reclaimable.derived_at"]
+    output: storage_ledger.derived_reclaimable.derivation_digest
+  control_snapshot_inputs:
+    include: ["schema_version", "snapshot_id", "governance", "scope", "topology_inventory_ref", "topology_inventory_digest", "bound_inputs", "fact_window", "drift_policy"]
+    exclude: ["status", "created_at", "frozen_at", "frozen_by_role", "freeze", "invalidated_reason", "supersedes_snapshot_ref", "notes"]
+    output: control_snapshot.freeze.snapshot_digest
+  gate_validation_inputs:
+    include: ["schema_version", "control_snapshot_ref", "control_snapshot_digest", "resource_ids", "component_ids", "exact_physical_target_refs", "checks", "required_checks", "blockers"]
+    exclude: ["gate_bundle_id", "validation_input_digest", "status", "validation_rules_ref", "validation_result_ref", "accepted_by_role", "accepted_at", "gate_bundle_digest"]
+    output: gate_bundle.validation_input_digest
+  gate_full_record:
+    include: ["$"]
+    exclude: ["gate_bundle_digest"]
+    output: gate_bundle.gate_bundle_digest
+  validation_result:
+    include: ["$"]
+    exclude: ["result_digest"]
+    output: validation_result.result_digest
+  retirement_validation_inputs:
+    include: ["schema_version", "retirement_id", "status", "control_snapshot_ref", "control_snapshot_digest", "resource_ids", "component_ids", "exact_physical_target_refs", "technical_gate_bundle_ref", "evidence_manifest_refs", "storage_ledger_ref", "physical_storage_impact", "owner_summary", "authorization", "holds", "restore", "buffer", "purge", "validation.rules_ref", "blockers", "notes"]
+    exclude: ["retirement_manifest_digest", "validation_input_digest", "validation.validation_result_ref"]
+    output: retirement_manifest.validation_input_digest
+  retirement_full_record:
+    include: ["$"]
+    exclude: ["retirement_manifest_digest"]
+    output: retirement_manifest.retirement_manifest_digest
+  migration_batch_validation_inputs:
+    include: ["batch_id", "status", "control_snapshot_ref", "control_snapshot_digest", "retirement_manifest_ref", "resource_ids", "component_ids", "exact_targets", "authorization_refs", "expected_mutations", "expected_storage_effect_ref", "abort_conditions", "restore_procedure_ref", "post_verification_checks", "pre_action_revalidation"]
+    exclude: ["validation_input_digest", "validation_result_ref", "post_action"]
+    output: migration_batch.validation_input_digest
+  reconciliation_validation_inputs:
+    include: ["schema_version", "reconciliation_id", "trigger", "trigger_ref", "recorded_at", "recorded_by_role", "resources_touched", "transient_workspaces", "caches", "evidence_closure", "storage_delta", "recurring_growth", "status", "completion_semantics", "notes"]
+    exclude: ["validation_input_digest", "validation_result_ref", "accepted_by_role"]
+    output: reconciliation.validation_input_digest
+
+digest_field_inventory:
+  authority:
+    registry.topology_inventory.inventory_digest: topology_inventory
+    registry.digests.fact_digest: registry_facts
+    registry.digests.full_record_digest: registry_full_record
+    state_data_manifest.manifest_digest: state_data_manifest
+    deployment_manifest.manifest_digest: deployment_manifest
+    evidence_manifest.manifest_digest: evidence_facts
+    storage_ledger.measurement.measurement_digest: storage_measurement
+    storage_ledger.derived_reclaimable.derivation_digest: storage_derivation_inputs
+    control_snapshot.freeze.snapshot_digest: control_snapshot_inputs
+    gate_bundle.validation_input_digest: gate_validation_inputs
+    gate_bundle.gate_bundle_digest: gate_full_record
+    validation_result.result_digest: validation_result
+    retirement_manifest.validation_input_digest: retirement_validation_inputs
+    retirement_manifest.retirement_manifest_digest: retirement_full_record
+    migration_batch.validation_input_digest: migration_batch_validation_inputs
+    reconciliation.validation_input_digest: reconciliation_validation_inputs
+  non_authority_informational:
+    - source_identity.artifact_digest
+    - evidence_manifest.local_artifacts[*].hash
+    - resource_registry.resources[*].equality_observations[*].digest
+
+validation_input_projection_by_subject_kind:
+  gate_bundle: gate_validation_inputs
+  evidence_manifest: evidence_facts
+  storage_measurement: storage_measurement
+  storage_derivation: storage_derivation_inputs
+  retirement_manifest: retirement_validation_inputs
+  migration_batch: migration_batch_validation_inputs
+  reconciliation: reconciliation_validation_inputs
+
+principles:
+  - "facts_decision_and_action_authority_are_distinct"
+  - "one_frozen_snapshot_per_decision_chain"
+  - "same_scope_must_be_proven_not_assumed"
+  - "all_machine_decisions_emit_one_validation_result_schema"
+  - "reference_graph_must_be_acyclic"
+  - "unknown_or_incomplete_fails_closed"
+  - "held_is_not_complete"
+  - "source_identity_location_workspace_and_deployment_are_distinct"
+  - "deployment_definition_does_not_prove_runtime_deployment"
+  - "equality_observation_is_not_provenance_or_authority"
+  - "measurement_basis_is_not_measurement_confidence"
+
+canonical_dataflow:
+  allowed_forward_relations:
+    - "fact_record -> control_snapshot"
+    - "control_snapshot -> validation_result"
+    - "fact_record -> validation_result"
+    - "validation_result -> gate_bundle"
+    - "gate_bundle -> resource_registry_derived_status"
+    - "gate_bundle -> storage_derivation"
+    - "gate_bundle -> retirement_manifest"
+    - "evidence_manifest -> retirement_manifest"
+    - "storage_derivation -> retirement_manifest"
+    - "retirement_manifest -> migration_batch"
+    - "migration_batch -> reconciliation"
+  forbidden_back_edges:
+    - "derived_status -> bound_fact_digest"
+    - "validation_result -> bound_fact_record"
+    - "retirement_or_migration -> gate_input_facts"
+    - "reconciliation -> prior_authorization"
+
+rules:
+  - id: BOUND_DIGEST_SCOPE
+    applies_to: control_snapshot.bound_inputs
+    require:
+      - digest_profile == lprl-cjson-v1
+      - digest_scope in [registry_facts, full_manifest, evidence_facts, storage_measurement, other]
+      - resource_registry uses digest_scope == registry_facts and digest == registry.digests.fact_digest
+      - storage_measurement uses digest_scope == storage_measurement and digest == ledger.measurement.measurement_digest
+      - state_data_manifest uses digest_scope == full_manifest and digest == manifest.manifest_digest
+      - deployment_manifest uses digest_scope == full_manifest and digest == manifest.manifest_digest
+      - evidence_manifest uses digest_scope == evidence_facts and digest == manifest.manifest_digest
+      - other is rejected unless a later schema supplies an exact normative digest_projections entry
+    otherwise: BLOCKED
+
+  - id: SNAPSHOT_SCOPE_CLOSURE
+    applies_to: control_snapshot
+    require:
+      - scope.resource_ids is nonempty
+      - every scope.component_id resolves within a scoped resource
+      - every scope.exact_physical_target_ref resolves to a physical location or storage object owned by the scoped resource/component set
+      - topology_inventory_ref resolves to the bound Resource Registry topology_inventory
+      - topology_inventory_digest == registry.topology_inventory.inventory_digest
+      - all applicable Registry, State/Data, Deployment, Evidence and Storage fact inputs for the scoped resource/component/target set are present in bound_inputs
+      - no bound decision input falls outside scope unless explicitly marked shared_owner_dependency
+    otherwise: BLOCKED
+
+  - id: SNAPSHOT_FREEZE
+    applies_to: control_snapshot
+    require:
+      - status == frozen
+      - freeze.all_required_inputs_present == true
+      - freeze.digest_profile == lprl-cjson-v1
+      - freeze.all_digests_present == true
+      - freeze.digest_scopes_validated == true
+      - freeze.scope_closure_validated == true
+      - freeze.topology_inventory_validated == true
+      - freeze.unresolved_blockers_empty == true
+      - freeze.snapshot_digest != null
+      - every bound input passes BOUND_DIGEST_SCOPE
+      - duplicate mapping keys, unsupported custom tags/scalars, and unknown digest profiles are rejected before digest construction
+      - SNAPSHOT_SCOPE_CLOSURE == PASS
+    otherwise: BLOCKED
+
+  - id: SAME_SNAPSHOT
+    applies_to: [validation_result, gate_bundle, storage_derivation, retirement_manifest, migration_batch]
+    require:
+      - control_snapshot_ref != null
+      - control_snapshot_digest != null
+      - referenced snapshot status == frozen
+      - control_snapshot_digest == referenced snapshot.freeze.snapshot_digest
+    otherwise: BLOCKED
+
+  - id: VALIDATION_RESULT_INTEGRITY
+    applies_to: validation_result
+    require:
+      - SAME_SNAPSHOT == PASS
+      - subject.ref != null
+      - subject.validation_input_digest != null
+      - subject.validation_input_digest_scope in [evidence_facts, storage_measurement, storage_derivation_inputs, gate_validation_inputs, retirement_validation_inputs, migration_batch_validation_inputs, reconciliation_validation_inputs]
+      - subject.validation_input_digest_scope matches the named projection required by subject.kind
+      - resolved_scope.resource_ids == snapshot.scope.resource_ids
+      - resolved_scope.component_ids == snapshot.scope.component_ids
+      - resolved_scope.exact_physical_target_refs == snapshot.scope.exact_physical_target_refs
+      - scope_closure.missing_required_refs is empty
+      - scope_closure.extra_unscoped_refs is empty
+      - scope_closure.same_scope_verified == true
+      - reference_graph.acyclic == true
+      - reference_graph.cycles_detected is empty
+      - every applicable required rule_result.status in [PASS, NOT_APPLICABLE]
+      - every NOT_APPLICABLE rule_result has proof_refs nonempty
+      - residual_human_decisions contains no unresolved item
+      - result_digest != null
+    otherwise: BLOCKED
+
+  - id: AUTHORITY_GRAPH_ACYCLIC
+    applies_to: validation_result.reference_graph
+    require:
+      - graph contains only canonical_dataflow forward relations or declared non-authority evidence links
+      - cycles_detected is empty
+      - acyclic == true
+    otherwise: BLOCKED
+
+  - id: SCOPE_TARGET_EQUIVALENCE
+    applies_to: [validation_result, gate_bundle, storage_derivation, retirement_manifest, migration_batch]
+    require:
+      - resolved resource/component/target sets equal the frozen snapshot scope unless the rule explicitly defines a subset
+      - any subset relation is machine-declared as subset_of_snapshot_scope and contains no out-of-scope target
+      - every proof_ref used for PASS resolves to the same resource/component/target set named by its rule_result.resolved_target_refs
+    otherwise: BLOCKED
+
+  - id: FACTS_TOPOLOGY_ENDPOINT_RESOLUTION
+    applies_to: resource_registry.topology_edges
+    require:
+      - every topology edge from_ref and to_ref resolves to a declared resource_id, component_id, physical_locations[].location_id, or physical_containers[].container_id
+      - physical_containers[].logical_resource_created == false
+      - no topology endpoint is made resolvable by inventing an unrelated logical resource
+    otherwise: BLOCKED
+
+  - id: SOURCE_PROVENANCE_NON_AUTHORITY
+    applies_to: resource_registry.resources[].source_provenance
+    require:
+      - relationship_to_origin in [canonical, upstream, fork, mirror, vendor_copy, deployment_copy, generated, unknown]
+      - controlled_project_source in [true, false, null]
+      - provenance fields are included only in Registry facts and are not treated as reconstructability, lifecycle, Gate or action authorization proof
+    otherwise: BLOCKED
+
+  - id: DEPLOYMENT_DEFINITION_NOT_RUNTIME
+    applies_to: resource_registry.resources[].deployment_definitions
+    require:
+      - each definition_id is unique within the Registry
+      - each non-null source_component_ref resolves to a declared Source/config component
+      - a definition with runtime_deployment_ref == null does not create or imply a runtime Deployment
+      - each non-null runtime_deployment_ref resolves to an independently observed Deployment Manifest subject
+    otherwise: BLOCKED
+
+  - id: EQUALITY_OBSERVATION_NON_AUTHORITY
+    applies_to: resource_registry.resources[].equality_observations
+    require:
+      - every observation_id is unique within the Registry
+      - observation_id != null
+      - algorithm != null
+      - digest != null
+      - compared_refs contains at least two distinct entries
+      - every compared_refs entry resolves to a declared resource_id, component_id, physical_locations[].location_id, or physical_containers[].container_id
+      - semantics == equality_check_only
+      - authority_effect == none
+      - equality observations are not used as artifact_digest, provenance, Evidence acceptance, reconstructability, lifecycle, Gate or action authorization proof
+    otherwise: BLOCKED
+
+  - id: STORAGE_MEASUREMENT_BASIS_INTEGRITY
+    applies_to: storage_ledger.measurement
+    require:
+      - measurement_basis in [apparent_only, exclusive_physical, mixed, unknown]
+      - measurement_basis is recorded independently from objects[].measurement_confidence
+      - measurement_basis == apparent_only does not imply exclusive_physical_bytes or shared_physical_bytes were measured
+    otherwise: BLOCKED
+
+  - id: REGISTRY_RETIRABLE_DERIVED
+    applies_to: resource_registry
+    require:
+      - lifecycle_status == RETIRABLE only if accepted_gate_bundle_ref resolves to a Gate passing GATE_BUNDLE_PASS under the same snapshot
+      - changing lifecycle_status or accepted_gate_bundle_ref does not change registry.digests.fact_digest
+    forbid:
+      - independent registry gate-status copies as retirement authority
+    otherwise: BLOCKED
+
+  - id: SOURCE_UNIQUE_VALUE_PASS
+    applies_to: gate_bundle.checks.source_unique_value
+    require:
+      - proof_ref resolves to resource_registry.resources[].source_unique_value_proof for the same scoped resource/component set
+      - proof.tracked_checked == true
+      - proof.staged_or_uncommitted_checked == true
+      - proof.untracked_checked == true
+      - proof.ignored_checked == true
+      - proof.local_refs_checked_or_not_applicable == true
+      - proof.unpushed_commits_checked_or_not_applicable == true
+      - proof.non_git_content_checked == true
+      - proof.unresolved_unique_source_data_evidence == 0
+    otherwise: BLOCKED
+
+  - id: WRITER_QUIESCENCE_PASS
+    applies_to: gate_bundle.checks.writer_quiescence
+    require_any:
+      - when: gate_check.status == PASS
+        require:
+          - proof_ref resolves to resource_registry.resources[].writer_custody for every scoped resource/component with writer applicability
+          - every resolved proof.status == CLEAR
+          - every resolved proof.observation_window_ref != null
+          - every resolved proof.revalidation_ref != null
+          - every resolved proof.fencing_method_ref != null
+          - validation_result.rule_result.resolved_target_refs exactly covers those scoped resources/components
+      - when: gate_check.status == NOT_APPLICABLE
+        require:
+          - proof_ref != null
+          - proof_ref documents why no writer/quiescence relation applies to the exact scoped target set
+    otherwise: BLOCKED
+
+  - id: TOPOLOGY_SCOPE_CLOSURE
+    applies_to: gate_bundle.checks.git_topology
+    require:
+      - FACTS_TOPOLOGY_ENDPOINT_RESOLUTION == PASS
+      - resource_registry.topology_inventory.inventory_id != null
+      - resource_registry.topology_inventory.coverage_complete == true
+      - resource_registry.topology_inventory.unresolved_regions is empty
+      - resource_registry.topology_inventory.inventory_digest != null
+      - every Snapshot/Gate scoped resource_id is contained in topology_inventory.discovery_scope_resource_ids
+      - every Snapshot/Gate scoped component_id is contained in topology_inventory.discovery_scope_component_ids
+      - every topology edge touching scoped resources/components/exact targets appears in topology_inventory.edge_ids
+      - validation_result.resolved_scope.topology_edge_ids equals the exact applicable touching/reachable edge set
+      - validation_result.resolved_scope.protected_or_shared_owner_refs equals the protected/shared-owner closure reachable through those edges
+      - every applicable protected/shared-owner ref is represented in topology_inventory.protected_or_shared_owner_refs
+      - rule_result.missing_refs is empty
+      - rule_result.extra_refs is empty
+    otherwise: BLOCKED
+
+    # coverage_complete is scoped topology discovery, not project-wide
+    # lifecycle completeness. Unrelated writer/State/runtime/storage UNKNOWNs
+    # remain blockers in their own rules unless they prevent topology discovery.
+    # A false value bound by a Snapshot cannot be reinterpreted from later
+    # unbound evidence; refresh Facts/digests and freeze a new Snapshot.
+
+  - id: GIT_TOPOLOGY_PASS
+    applies_to: gate_bundle.checks.git_topology
+    require_any:
+      - when: gate_check.status == PASS
+        require:
+          - TOPOLOGY_SCOPE_CLOSURE == PASS
+          - proof_ref resolves to topology evidence within the bound Resource Registry
+          - mutation_side_effects are enumerated for every applicable edge
+          - protected_parent_or_owner_ref is present on every applicable protected/shared-owner edge
+      - when: gate_check.status == NOT_APPLICABLE
+        require:
+          - proof_ref != null
+          - proof_ref documents absence of Git/shared-topology applicability for the exact scoped target set
+    otherwise: BLOCKED
+
+  - id: STATE_DATA_GATE_PASS
+    applies_to: gate_bundle.checks.state_data
+    require_any:
+      - when: gate_check.status == PASS
+        require:
+          - every applicable state/data manifest is bound to the same frozen snapshot
+          - validation_result.resolved_scope.state_data_manifest_refs equals the applicable manifest set
+          - every applicable manifest.resource_id is in snapshot.scope.resource_ids or is a declared preserved binding dependency
+          - every applicable manifest.unique_copy_status != UNKNOWN
+          - every applicable manifest.active_consumers is fully enumerated
+          - every applicable manifest.bindings is fully enumerated
+          - every applicable manifest.recovery.recovery_procedure_ref != null when recovery.backup_required == true
+          - every applicable manifest.recovery.backup_verified == true when recovery.backup_required == true
+          - every applicable manifest.retention.audit_hold == false or the target does not mutate that manifest's protected physical data
+          - every applicable manifest.rollback.compatibility_status in [PASS, NOT_APPLICABLE]
+          - every applicable manifest.rollback.blockers is empty
+          - exact targets do not remove a protected/unique State/Data location unless retirement.allowed_by_policy == true and explicit action authorization exists later in Retirement
+      - when: gate_check.status == NOT_APPLICABLE
+        require:
+          - proof_ref != null
+          - validation_result.resolved_scope.state_data_manifest_refs is empty
+    otherwise: BLOCKED
+
+  - id: DEPLOYMENT_ROLLBACK_GATE_PASS
+    applies_to: gate_bundle.checks.deployment_rollback
+    require_any:
+      - when: gate_check.status == PASS
+        require:
+          - every applicable deployment manifest is bound to the same frozen snapshot
+          - validation_result.resolved_scope.deployment_manifest_refs equals the applicable manifest set
+          - every non-null deployment_manifest.deployment_definition_refs entry resolves to a Registry deployment_definitions[].definition_id
+          - every required_current deployment target is excluded from retirement exact targets
+          - every required_previous rollback generation is preserved or has a validated replacement
+          - every applicable state_binding.binding_status in [PASS, PRESERVED, NOT_APPLICABLE]
+          - every applicable rollback.compatibility_status in [PASS, NOT_APPLICABLE]
+          - every applicable rollback.rollback_blockers is empty
+          - rollback.rollback_procedure_ref != null when retention.required_previous == true
+      - when: gate_check.status == NOT_APPLICABLE
+        require:
+          - proof_ref != null
+          - validation_result.resolved_scope.deployment_manifest_refs is empty
+    otherwise: BLOCKED
+
+  - id: EVIDENCE_ACCEPTED
+    applies_to: evidence_manifest
+    when: status == accepted
+    require:
+      - completeness_checks.source_identity_recorded == true
+      - completeness_checks.required_tests_recorded == true
+      - completeness_checks.validator_evidence_recorded == true
+      - completeness_checks.lead_acceptance_recorded == true
+      - completeness_checks.unique_local_evidence_resolved == true
+      - unresolved_items is empty
+      - acceptance.accepted_by_role == lead_controller
+      - acceptance.accepted_at != null
+      - acceptance.validation_result_ref resolves to PASS under VALIDATION_RESULT_INTEGRITY
+      - manifest_digest was produced under profile lprl-cjson-v1 and projection evidence_facts
+      - manifest_digest != null
+    otherwise: BLOCKED
+
+  - id: GATE_BUNDLE_PASS
+    applies_to: gate_bundle
+    when: status == PASS
+    require:
+      - SAME_SNAPSHOT == PASS
+      - validation_result_ref resolves to a PASS validation_result for subject.kind == gate_bundle
+      - validation_result.subject.validation_input_digest == gate_bundle.validation_input_digest
+      - VALIDATION_RESULT_INTEGRITY == PASS
+      - SCOPE_TARGET_EQUIVALENCE == PASS
+      - every required_checks entry has status in [PASS, NOT_APPLICABLE]
+      - every required check's proof_ref is represented in validation_result.rule_results
+      - checks.state_data passes STATE_DATA_GATE_PASS
+      - checks.deployment_rollback passes DEPLOYMENT_ROLLBACK_GATE_PASS
+      - blockers is empty
+      - accepted_by_role == lead_controller
+      - accepted_at != null
+    otherwise: BLOCKED
+
+  - id: STORAGE_SAFE_RECLAIMABLE_DERIVED
+    applies_to: storage_ledger.derived_reclaimable.currently_safe_reclaimable_bytes
+    derived: true
+    formula: "sum(releasable exclusive/shared physical bytes for storage objects whose scoped owners all pass GATE_BUNDLE_PASS under the same frozen snapshot)"
+    require:
+      - STORAGE_MEASUREMENT_BASIS_INTEGRITY == PASS
+      - measurement.measurement_basis in [exclusive_physical, mixed]
+      - derived_reclaimable.control_snapshot_ref resolves to frozen snapshot
+      - derived_reclaimable.control_snapshot_digest == snapshot.freeze.snapshot_digest
+      - validation_result.resolved_scope.storage_object_ids equals the contributing storage-object set
+      - every derived_reclaimable.gate_bundle_refs entry passes GATE_BUNDLE_PASS under the same snapshot
+      - no overlapping apparent-byte summation
+      - shared bytes count only when every owner is releasable under the same snapshot
+      - every contributing resource/component is RETIRABLE under an accepted Gate Bundle
+      - every contributing object measurement_confidence in [high, verified]
+      - derived_reclaimable.derivation_ref != null
+      - derived_reclaimable.derivation_digest != null
+      - validation.derivation_validation_result_ref resolves to PASS for subject.kind == storage_derivation
+      - validation_result.subject.validation_input_digest == derived_reclaimable.derivation_digest
+      - validation_result.subject.validation_input_digest_scope == storage_derivation_inputs
+      - changing derived_reclaimable does not change measurement.measurement_digest
+    forbid:
+      - manual_override
+    otherwise: BLOCKED
+
+  - id: RETIREMENT_APPROVAL
+    applies_to: retirement_manifest
+    when: status in [approved, buffered, purge_authorized, purged]
+    require:
+      - SAME_SNAPSHOT == PASS
+      - validation.validation_result_ref resolves to PASS for subject.kind == retirement_manifest
+      - validation_result.subject.validation_input_digest == retirement_manifest.validation_input_digest
+      - SCOPE_TARGET_EQUIVALENCE == PASS
+      - exact_physical_target_refs is nonempty
+      - technical_gate_bundle_ref passes GATE_BUNDLE_PASS for the same scope/snapshot
+      - all evidence_manifest_refs resolve to accepted
+      - storage_ledger_ref resolves and passes STORAGE_SAFE_RECLAIMABLE_DERIVED for the exact target set
+      - physical_storage_impact.safe_reclaimable_derivation_ref resolves to the same storage derivation
+      - physical_storage_impact.exclusive_bytes_expected <= derived safe reclaimable bytes for the exact target scope
+      - authorization.protected_parent_authorization_refs cover validation_result.resolved_scope.protected_or_shared_owner_refs exactly when mutation affects them
+      - authorization.lead_retirement_approval_ref != null
+      - authorization.owner_approval_ref != null when authorization.owner_approval_required == true
+      - restore.restore_procedure_ref != null
+      - retirement_manifest_digest != null
+    status_requirements:
+      approved:
+        require:
+          - holds.clear_for_buffer_entry == true
+      buffered:
+        require:
+          - holds.clear_for_buffer_entry == true
+          - buffer.project_local_delete_ref != null
+          - buffer.entered_at != null
+          - buffer.buffer_inventory_hash != null
+      purge_authorized:
+        require:
+          - holds.clear_for_purge == true
+          - purge.approval_ref != null
+          - buffer.project_local_delete_ref != null
+          - buffer.buffer_inventory_hash != null
+      purged:
+        require:
+          - holds.clear_for_purge == true
+          - purge.approval_ref != null
+          - purge.completed_at != null
+          - purge.purge_record_ref != null
+    otherwise: BLOCKED
+
+  - id: MIGRATION_BATCH_READY
+    applies_to: migration_batch
+    when: status == ready
+    require:
+      - SAME_SNAPSHOT == PASS
+      - validation_result_ref resolves to PASS for subject.kind == migration_batch
+      - validation_result.subject.validation_input_digest == migration_batch.validation_input_digest
+      - SCOPE_TARGET_EQUIVALENCE == PASS
+      - retirement_manifest_ref resolves to status in [approved, buffered]
+      - retirement manifest uses the same control_snapshot_digest
+      - pre_action_revalidation.status == PASS
+      - pre_action_revalidation.observed_snapshot_digest == control_snapshot_digest
+      - exact_targets == retirement_manifest.exact_physical_target_refs
+      - authorization_refs cover all action authorizations required by the retirement validation result
+      - abort_conditions is nonempty
+      - restore_procedure_ref != null
+    otherwise: BLOCKED
+
+  - id: RECONCILIATION_COMPLETE
+    applies_to: reconciliation_record
+    when: status == complete
+    require:
+      - validation_result_ref resolves to PASS for subject.kind == reconciliation
+      - validation_result.subject.validation_input_digest == reconciliation.validation_input_digest
+      - every transient_workspaces[].disposition != unknown
+      - every caches[].ttl_or_budget_policy_ref != null
+      - evidence_closure.complete == true
+      - storage_delta.after_ledger_ref != null when trigger == post_migration_batch
+      - recurring_growth.unresolved_items is present
+      - accepted_by_role == lead_controller
+    otherwise: BLOCKED
+
+  - id: RECONCILIATION_REQUIRED
+    applies_to: task_or_migration_finalization
+    when: final_status in [complete, verified, rolled_back]
+    require:
+      - reconciliation_record_ref != null
+      - referenced reconciliation_record.status == complete
+      - referenced reconciliation record passes RECONCILIATION_COMPLETE
+    forbid:
+      - status == held satisfying completion or finalization semantics
+    otherwise: BLOCKED
+
+conformance_vectors:
+  - id: mapping_order_whitespace_invariant
+    profile: lprl-cjson-v1
+    source_yaml_a: |-
+      alpha: 1
+      message: "hé"
+      nested: {a: true, z: null}
+      ordered: [b, a]
+    source_yaml_b: |-
+      ordered:
+        - b
+        - a
+      nested:
+        z: null
+        a: true
+      message: 'hé'
+      alpha: 1
+    projection:
+      alpha: 1
+      message: "hé"
+      nested:
+        a: true
+        z: null
+      ordered: [b, a]
+    expected_sha256: bd9703366437ae0eee4a315784cea107e939d22d0f3e3321bd96c3b47e1fe7a5
+
+  - id: included_fact_changes_digest
+    profile: lprl-cjson-v1
+    input_before: {fact: stable, count: 1}
+    input_after: {fact: stable, count: 2}
+    projection_before: {fact: stable, count: 1}
+    projection_after: {fact: stable, count: 2}
+    expected_before_sha256: 8a16df2ae5d456bd48d376aaf806afdcc7648ec91474047e2a00f27e33571f9c
+    expected_after_sha256: af0d3d237bf5eded0978d647563952e42510bed3903e10e65ca0a815568645f1
+
+  - id: excluded_registry_derived_field_invariant
+    profile: lprl-cjson-v1
+    input_before:
+      schema_version: "0.2.4-pilot"
+      project_id: demo
+      registry_status: draft
+      resources:
+        - resource_id: r1
+          protection_status: PROTECTED
+          lifecycle_status: UNKNOWN
+          accepted_gate_bundle_ref: null
+    input_after:
+      schema_version: "0.2.4-pilot"
+      project_id: demo
+      registry_status: frozen
+      resources:
+        - resource_id: r1
+          protection_status: PROTECTED
+          lifecycle_status: RETIRABLE
+          accepted_gate_bundle_ref: gate-1
+    projection:
+      schema_version: "0.2.4-pilot"
+      project_id: demo
+      resources:
+        - resource_id: r1
+          protection_status: PROTECTED
+    expected_sha256: 79f92bc55dab3d6a747b1aae010c78b861dd6b9b969f8b5be5fb5bac5376fa80
+
+  - id: evidence_acceptance_cycle_break
+    profile: lprl-cjson-v1
+    input_before:
+      manifest_id: evidence-1
+      status: draft
+      resource_id: r1
+      source_identity: {repository_or_store_ref: repo, commit: abc, tree: def, artifact_digest: sha}
+      unresolved_items: []
+      acceptance: {validation_result_ref: null, accepted_by_role: null, accepted_at: null}
+    input_after:
+      manifest_id: evidence-1
+      status: accepted
+      resource_id: r1
+      source_identity: {repository_or_store_ref: repo, commit: abc, tree: def, artifact_digest: sha}
+      unresolved_items: []
+      acceptance: {validation_result_ref: validation-1, accepted_by_role: lead_controller, accepted_at: "2026-08-29T05:00:00Z"}
+    projection:
+      manifest_id: evidence-1
+      resource_id: r1
+      source_identity: {repository_or_store_ref: repo, commit: abc, tree: def, artifact_digest: sha}
+      unresolved_items: []
+    expected_sha256: e1de9b63d2623cb7f0b032035b36c3ad89653c5cf1ebc2dba22fbc99e7dd8478
+
+  - id: invalid_scalar_blocks_digest
+    profile: lprl-cjson-v1
+    cases:
+      - source_yaml: |-
+          value: 1.5
+        expected: BLOCKED
+      - source_yaml: |-
+          observed_at: 2026-08-29
+        expected: BLOCKED
+      - source_yaml: |-
+          value: !!binary SGVsbG8=
+        expected: BLOCKED
+
+  - id: duplicate_key_blocks_digest
+    profile: lprl-cjson-v1
+    source_yaml: |-
+      fact: first
+      fact: second
+    expected: BLOCKED
+
+  - id: storage_derivation_inputs_digest_authority
+    profile: lprl-cjson-v1
+    input_before:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-b]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 123
+        derivation_ref: derivation-record-1
+        derivation_digest: old-digest
+        derived_at: null
+      validation:
+        measurement_validation_result_ref: measurement-1
+        derivation_validation_result_ref: null
+    input_after:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-c]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 124
+        derivation_ref: derivation-record-1
+        derivation_digest: new-digest
+        derived_at: "2026-08-29T05:30:00Z"
+      validation:
+        measurement_validation_result_ref: measurement-1
+        derivation_validation_result_ref: validation-2
+    projection_before:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-b]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 123
+        derivation_ref: derivation-record-1
+    projection_after:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-c]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 124
+        derivation_ref: derivation-record-1
+    excluded_only_before:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-b]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 123
+        derivation_ref: derivation-record-1
+        derivation_digest: old-digest
+        derived_at: null
+      validation:
+        measurement_validation_result_ref: measurement-1
+        derivation_validation_result_ref: null
+    excluded_only_after:
+      schema_version: "0.2.4-pilot"
+      ledger_id: ledger-1
+      measurement: {measurement_digest: measure-abc}
+      derived_reclaimable:
+        control_snapshot_ref: snap-1
+        control_snapshot_digest: snap-digest
+        gate_bundle_refs: [gate-a, gate-b]
+        contributing_storage_object_ids: [obj-1]
+        currently_safe_reclaimable_bytes: 123
+        derivation_ref: derivation-record-1
+        derivation_digest: replacement-digest
+        derived_at: "2026-08-29T05:30:00Z"
+      validation:
+        measurement_validation_result_ref: measurement-1
+        derivation_validation_result_ref: validation-2
+    expected_before_sha256: 9542df8034c6d4f3614418fa1404a437f41393a6a968da68e349087d184d4e1c
+    expected_after_sha256: b2c46961a34973bae9af3004cecdb9bc86f9a24a803fe4a7302d227406cef096
+    excluded_post_validation_changes_preserve_digest: true

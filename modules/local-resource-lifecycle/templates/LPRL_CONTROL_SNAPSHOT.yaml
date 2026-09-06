@@ -1,0 +1,69 @@
+schema_version: "0.2.4-pilot"
+snapshot_id: "lprl-snapshot-000"
+status: draft # draft|frozen|invalidated
+created_at: null
+frozen_at: null
+frozen_by_role: null
+
+governance:
+  revision: null
+  lprl_spec_ref: null
+  validation_rules_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+  validation_result_schema_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RESULT.yaml"
+
+scope:
+  resource_ids: []
+  component_ids: []
+  exact_physical_target_refs: []
+  shared_owner_dependency_refs: []
+
+topology_inventory_ref: null
+topology_inventory_digest: null # equality reference to registry.topology_inventory.inventory_digest
+
+# Bind immutable FACT scopes only. Derived lifecycle, Gate verdicts and post-Gate
+# reclaimable values are intentionally excluded.
+bound_inputs:
+  - kind: resource_registry # resource_registry|state_data_manifest|deployment_manifest|evidence_manifest|storage_measurement|other
+    ref: null
+    schema_version: null
+    digest_profile: lprl-cjson-v1
+    digest_scope: null # registry_facts|full_manifest|evidence_facts|storage_measurement|other
+    digest: null
+    scope_relation: in_scope # in_scope|shared_owner_dependency
+    covered_resource_ids: []
+    covered_component_ids: []
+    covered_target_refs: []
+
+fact_window:
+  captured_at: null
+  writer_observation_window_ref: null
+  source_observation_ref: null
+  topology_observation_ref: null
+  dependency_observation_ref: null
+
+drift_policy:
+  any_bound_fact_digest_change_invalidates: true
+  source_identity_change_invalidates: true
+  writer_or_activity_change_invalidates: true
+  topology_change_invalidates: true
+  topology_inventory_digest_change_invalidates: true
+  state_data_binding_change_invalidates: true
+  active_dependency_change_invalidates: true
+
+freeze:
+  all_required_inputs_present: false
+  all_digests_present: false
+  digest_scopes_validated: false
+  scope_closure_validated: false
+  topology_inventory_validated: false
+  unresolved_blockers_empty: false
+  digest_profile: lprl-cjson-v1
+  digest_algorithm: sha256
+  snapshot_digest: null # lprl-cjson-v1 / control_snapshot_inputs; excludes freeze and readiness metadata
+
+invalidated_reason: null
+supersedes_snapshot_ref: null
+notes: null
+
+# SNAPSHOT_SCOPE_CLOSURE requires nonempty scope, exact target resolution, all
+# applicable fact inputs, and the canonical topology inventory before freeze.

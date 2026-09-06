@@ -1,0 +1,57 @@
+schema_version: "0.5"
+
+# Explicit opt-in anonymized aggregate export template only.
+# Project-local calibration does NOT require this file, does NOT automatically generate/send it,
+# and never sends external adopter facts upstream by default.
+
+export_policy:
+  enabled_by_default: false
+  explicit_owner_or_governance_maintainer_opt_in_required: true
+  automatic_upstream_delivery: false
+  automatic_adopter_registration: false
+  aggregate_only: true
+  include_project_name: false
+  include_repository_identity: false
+  include_task_or_issue_refs: false
+  include_pr_branch_or_commit_refs: false
+  include_private_paths_or_source: false
+  include_raw_samples: false
+  include_task_text: false
+  include_business_data: false
+  include_personal_information: false
+  include_stable_adopter_pseudonym_or_hash: false
+  required_cost_or_latency_telemetry: false
+
+feedback_batch:
+  source_scope: anonymized_opt_in_aggregate
+  governance_version: null
+  generated_at: null
+  calibration_window: null
+  distinct_project_source_claim: not_asserted
+
+aggregates:
+  - role: bounded_worker|validator
+    task_class: null
+    risk_level: null
+    model_semantic_key: null
+    reasoning_semantic_key: null
+    sample_count: null
+
+    worker_metrics:
+      accepted_first_pass_rate: null
+      final_accepted_rate: null
+      mean_rework_count: null
+      tests_passed_rate: null
+      any_violation_rate: null
+
+    validator_metrics:
+      review_completed_rate: null
+      material_findings_confirmed_total: null
+      false_positive_confirmed_total: null
+      missed_defect_confirmed_total: null
+
+notes:
+  - "This template is for deliberate anonymized aggregate export only; the ordinary downstream calibration workflow never sends it upstream."
+  - "Do not export raw per-Task/per-Issue samples or any stable project/adopter identifier merely to prove source diversity."
+  - "Unknown fields remain null; do not infer project-identifying facts or fabricate efficiency telemetry."
+  - "An anonymous single-project aggregate may inform review or hypothesis generation but may not auto-promote/demote global qualification or satisfy min_distinct_project_sources by itself."

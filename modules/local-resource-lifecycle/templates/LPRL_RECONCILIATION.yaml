@@ -1,0 +1,53 @@
+schema_version: "0.2.4-pilot"
+reconciliation_id: "reconcile-000"
+trigger: post_task # post_task|post_validation|post_migration_batch|periodic
+trigger_ref: null
+recorded_at: null
+recorded_by_role: null
+validation_input_digest: null # lprl-cjson-v1 / reconciliation_validation_inputs
+validation_result_ref: null
+
+resources_touched: []
+
+transient_workspaces:
+  - resource_id: null
+    disposition: keep_active # keep_active|hold|retire_candidate|retired|unknown
+    reason: null
+    next_review_ref: null
+
+caches:
+  - resource_id: null
+    owner_ref: null
+    measured_bytes: null
+    ttl_or_budget_policy_ref: null
+    over_budget_or_expired: null
+    disposition: keep # keep|retire_candidate|hold
+
+evidence_closure:
+  required: true
+  evidence_manifest_refs: []
+  complete: false
+
+storage_delta:
+  before_ledger_ref: null
+  after_ledger_ref: null
+  actual_exclusive_bytes_released: 0
+  new_unknown_or_unmeasured_bytes: null
+
+recurring_growth:
+  task_named_permanent_workspace_created: false
+  abandoned_transient_detected: false
+  cache_budget_violation_detected: false
+  delete_buffer_hold_overdue: false
+  unresolved_items: []
+
+status: open # open|complete|held
+completion_semantics:
+  satisfies_task_or_batch_finalization: false
+  held_is_non_complete: true
+accepted_by_role: null
+notes: null
+
+# RECONCILIATION_REQUIRED is a hard BLOCK for task complete / migration verified /
+# migration rolled_back states unless this record is status=complete and passes
+# RECONCILIATION_COMPLETE. held is an explicit non-complete state only.

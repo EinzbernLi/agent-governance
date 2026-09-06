@@ -1,0 +1,62 @@
+schema_version: "0.2.4-pilot"
+deployment_id: "deployment-000"
+manifest_digest: null # lprl-cjson-v1 / deployment_manifest; excludes this field only
+slot: null
+generation_id: null
+status: UNKNOWN # VERIFIED|ACTIVE|INACTIVE|BLOCKED|UNKNOWN
+protection_status: PROTECTED
+
+source_identity:
+  repository_or_store_ref: null
+  commit: null
+  tree: null
+  artifact_digest: null # external artifact hash; informational provenance, not an LPRL structured digest
+
+# Optional links to Source/config deployment-definition facts in the bound
+# Resource Registry. These references help relate an observed runtime subject to
+# its declaration, but the declaration itself never proves runtime existence.
+deployment_definition_refs: []
+
+physical_location_refs: []
+state_bindings:
+  - state_resource_id: null
+    state_version: null
+    state_manifest_ref: null
+    binding_status: UNKNOWN # PASS|PRESERVED|NOT_APPLICABLE|BLOCKED|UNKNOWN
+
+data_bindings: []
+writer_owner: null
+writer_custody_ref: null
+health_evidence_refs: []
+promotion_provenance_refs: []
+
+previous_generation:
+  generation_id: null
+  source_identity_ref: null
+  state_binding_refs: []
+  preserved: null
+  validated_replacement_ref: null
+
+rollback:
+  compatibility_status: UNKNOWN # PASS|NOT_APPLICABLE|BLOCKED|UNKNOWN
+  compatibility_evidence_refs: []
+  rollback_window: null
+  rollback_procedure_ref: null
+  rollback_blockers: []
+
+retention:
+  required_current: null
+  required_previous: null
+  hold_reason: null
+
+last_verified: null
+notes: null
+
+# A Deployment Manifest represents an observed runtime Deployment subject.
+# deployment_definition_refs may be empty or unresolved; a Source/config
+# definition must never be promoted into a runtime Deployment merely to fill
+# this template.
+#
+# DEPLOYMENT_ROLLBACK_GATE_PASS blocks retirement of required current deployment
+# targets, requires required previous rollback capacity to be preserved/replaced,
+# and rejects UNKNOWN/BLOCKED binding or rollback compatibility.

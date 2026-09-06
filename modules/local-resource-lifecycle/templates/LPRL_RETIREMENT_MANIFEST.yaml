@@ -1,0 +1,66 @@
+schema_version: "0.2.4-pilot"
+retirement_id: "retirement-000"
+status: draft # draft|approved|buffered|purge_authorized|purged|blocked
+retirement_manifest_digest: null # lprl-cjson-v1 / retirement_full_record; excludes this field only
+validation_input_digest: null # lprl-cjson-v1 / retirement_validation_inputs
+
+control_snapshot_ref: null
+control_snapshot_digest: null
+resource_ids: []
+component_ids: []
+exact_physical_target_refs: []
+technical_gate_bundle_ref: null
+evidence_manifest_refs: []
+storage_ledger_ref: null
+
+physical_storage_impact:
+  exclusive_bytes_expected: null
+  shared_bytes_affected: null
+  confidence: unknown
+  safe_reclaimable_derivation_ref: null
+
+owner_summary:
+  plain_language_reason: null
+  consequence: null
+  safe_to_restore_until: null
+  expected_space_release: null
+
+authorization:
+  lead_retirement_approval_ref: null
+  owner_approval_required: true
+  owner_approval_ref: null
+  protected_parent_authorization_refs: []
+
+holds:
+  audit_hold_until: null
+  retention_hold_until: null
+  hold_reasons: []
+  clear_for_buffer_entry: false
+  clear_for_purge: false
+
+restore:
+  restore_window_until: null
+  restore_procedure_ref: null
+  restore_verification_ref: null
+
+buffer:
+  project_local_delete_ref: null
+  entered_at: null
+  buffer_inventory_hash: null
+
+purge:
+  approval_required: true
+  approval_ref: null
+  completed_at: null
+  purge_record_ref: null
+
+validation:
+  rules_ref: "modules/local-resource-lifecycle/templates/LPRL_VALIDATION_RULES.yaml"
+  validation_result_ref: null
+
+blockers: []
+notes: null
+
+# RETIREMENT_APPROVAL consumes the canonical validation result and exact resolved
+# target/owner closure. Status-specific invariants make buffered/purge_authorized/
+# purged impossible without the required buffer inventory or purge evidence.

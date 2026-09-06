@@ -1,0 +1,45 @@
+name: Feature or proposal
+description: Suggest a public-safe improvement or governance proposal
+title: "[Proposal]: "
+labels: []
+body:
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected module or surface
+      options:
+        - Core Governance
+        - LPRL
+        - Shared tooling/docs surface
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Proposed behavior at a high level
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Module-boundary impact
+      description: Explain whether this creates a Core↔LPRL dependency, automatic loading, or cross-module repin.
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and telemetry implications
+      description: Do not include personal, business-sensitive, or downstream-private data.
+    validations:
+      required: true
+  - type: textarea
+    id: preview
+    attributes:
+      label: LPRL Preview implications (when applicable)

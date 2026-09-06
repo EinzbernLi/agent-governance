@@ -1,0 +1,65 @@
+{
+  "authority": {
+    "evidence_only": true,
+    "higher_precedence_internal_evidence": [
+      "project_local_calibration",
+      "governance_calibration_snapshot"
+    ],
+    "may_auto_change_model_registry_status": false,
+    "may_bypass_qualification": false,
+    "may_directly_promote_or_demote_production_route": false
+  },
+  "observation_columns": [
+    "model_key",
+    "source_model_label",
+    "benchmark_group",
+    "benchmark",
+    "source_native_metric",
+    "benchmark_or_methodology_version",
+    "source_ref",
+    "model_identity_match"
+  ],
+  "observation_rows": [
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Agentic Coding", "python", 60, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Coding", "code_generation", 81.69, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Data Analysis", "tablejoin", 45.481, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "IF", "summarize", 84.767, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Language", "connections", 100, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Mathematics", "math_comp", 96.078, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gemini-3.7-flash", "gemini-3.7-flash-high", "Reasoning", "theory_of_mind", 82.692, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Agentic Coding", "python", 45, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Coding", "code_generation", 78.873, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Data Analysis", "tablejoin", 47.596, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "IF", "summarize", 64.933, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Language", "connections", 96.5, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Mathematics", "math_comp", 92.157, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-luna", "gpt-5.6-luna-max", "Reasoning", "theory_of_mind", 73.077, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Agentic Coding", "python", 55, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Coding", "code_generation", 83.099, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Data Analysis", "tablejoin", 49.308, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "IF", "summarize", 69.433, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Language", "connections", 100, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Mathematics", "math_comp", 95.098, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-sol", "gpt-5.6-sol-max", "Reasoning", "theory_of_mind", 84.615, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Agentic Coding", "python", 50, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Coding", "code_generation", 76.056, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Data Analysis", "tablejoin", 50.25, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "IF", "summarize", 73.167, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Language", "connections", 93, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Mathematics", "math_comp", 95.098, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"],
+    ["gpt-5.6-terra", "gpt-5.6-terra-max", "Reasoning", "theory_of_mind", 86.538, "livebench-release-2026-06-25", "LiveBench/new-livebench@a046342ce72c53eb15c798f80927c65d7a1abd5d:public/table_2026_06_25.csv", "compatible_prior"]
+  ],
+  "provenance": {
+    "categories_blob_sha": "50b5672fe14023f5ba14efc1ce16e221e6573056",
+    "categories_path": "public/categories_2026_06_25.json",
+    "collected_at": "2026-09-01T05:57:00Z",
+    "source_commit": "a046342ce72c53eb15c798f80927c65d7a1abd5d",
+    "source_id": "livebench_official_github",
+    "source_release": "2026-06-25",
+    "source_repository": "LiveBench/new-livebench",
+    "table_blob_sha": "6600f2fbe1fec9ef1f5a13df9ab0f51cf41201de",
+    "table_path": "public/table_2026_06_25.csv"
+  },
+  "schema_version": "0.1",
+  "status": "accepted_external_benchmark_prior"
+}

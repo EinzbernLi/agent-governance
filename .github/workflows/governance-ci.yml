@@ -1,0 +1,108 @@
+name: Governance CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: governance-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  governance-ci:
+    name: governance-ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Run Core-only governance conformance
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "true"
+        run: python -m unittest discover -s tests -p 'test_governance_conformance.py' -k 'test_core_central_fixture_is_lprl_free_and_conformant' -v
+      - name: Run LPRL-only module tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "true"
+        run: python -m unittest discover -s modules/local-resource-lifecycle/tests -p 'test*.py' -v
+      - name: Run combined Core and LPRL tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "true"
+        run: python -m unittest discover -s tests -p 'test*.py'
+      - name: Detect Console verification scope
+        id: console_scope
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          if printf '%s\n' "$changed" | grep -Eq '^(console/|\.github/workflows/console-ci\.yml$)'; then
+            echo "required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Console backend dependencies
+        if: steps.console_scope.outputs.required == 'true'
+        run: python -m pip install -e 'console/backend[dev]'
+      - name: Compile Console backend
+        if: steps.console_scope.outputs.required == 'true'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m compileall -q console/backend/governance_console console/backend/tests
+      - name: Test Console backend
+        if: steps.console_scope.outputs.required == 'true'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m pytest -q console/backend/tests
+      - uses: actions/setup-node@v7
+        if: steps.console_scope.outputs.required == 'true'
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: console/frontend/package-lock.json
+      - name: Install Console frontend dependencies from lockfile
+        if: steps.console_scope.outputs.required == 'true'
+        run: npm ci --prefix console/frontend
+      - name: Typecheck Console frontend
+        if: steps.console_scope.outputs.required == 'true'
+        run: npm --prefix console/frontend run typecheck
+      - name: Build Console frontend
+        if: steps.console_scope.outputs.required == 'true'
+        run: npm --prefix console/frontend run build
+      - name: Assert clean worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Run exact-checkout central conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit="$(git rev-parse HEAD)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          cat > /tmp/governance-conformance-input.yaml <<EOF
+          schema_version: "0.2"
+          mode: central_governance
+          expected_identity:
+            commit: ${commit}
+            tree: ${tree}
+          EOF
+          python templates/GOVERNANCE_CONFORMANCE_CHECK.py \
+            --root "$PWD" \
+            --policy config/CONFORMANCE_POLICY.yaml \
+            --input /tmp/governance-conformance-input.yaml

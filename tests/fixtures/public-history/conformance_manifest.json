@@ -1,0 +1,68 @@
+{
+  "purpose": "retained_history_content_identity_without_private_git_ancestry",
+  "releases": {
+    "0.3.14": {
+      "blobs": {
+        "GOVERNANCE_RELEASE.yaml": "356aef1c1d473d66e48b03ffe5f998f64a5c3293",
+        "README.md": "a4a301bedd50526efa2f4e0165eaf876d2e18dbb",
+        "VERSION": "0b69c00c5f5a0e553ff0bab7ae97f473d9facfe0",
+        "config/DISPATCH_POLICY.yaml": "f67a905e3613e03d7ad13cbbc63a8dc0bac30a69",
+        "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": "19c0515c236fe70df4a68d8334cb5c9e0eaf96e8",
+        "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md": "1723d4cb677219f77c8fc17202f89a75d5a0ba1c",
+        "docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md": "e57e24dbd1f28d8ff00fb471453e2cf74269eb86",
+        "docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md": "f8174f489ba8c10fdb3fa1f30b8b4b0572b09b74",
+        "docs/project-adoption/PROJECT_ADOPTION.md": "bee605e83723c262cf9e489aa1b6f64715d2595c",
+        "docs/task-package/TASK_PACKAGE_SPEC.md": "01f15142d4ed985adf6a649f5e70aa6a25e34a32",
+        "modules/local-resource-lifecycle/VERSION": "ebe497d79d57e5b2569b23bdc2eeb8b555f416c3",
+        "templates/GOVERNANCE_LOCK.yaml": "a14c61f2e7fb30d5980d15c773655eb947e8d91e",
+        "templates/LOCAL_POLICY.yaml": "93ac24d5892acd208cb22cbe145d24550d7c6ef5"
+      },
+      "source_commit": "db193e1ae6f5c92f512034444354549581c0b843",
+      "source_tree": "1f41343ec5d2348cd3ef645230647c25fdd7b969"
+    },
+    "0.3.15": {
+      "blobs": {
+        "GOVERNANCE_RELEASE.yaml": "b5fcc44de1ca463d5e3bd9646bc8d61d772a33a0",
+        "README.md": "ac266e3fbe754bc47518dc18845ccba370dae2e3",
+        "VERSION": "9e29e106195aedbabe97749b5d43c0ac9e8b52d3",
+        "config/CONFORMANCE_POLICY.yaml": "cbd886e247cd3ec5e982b85f28693101567a7b58",
+        "config/DISPATCH_POLICY.yaml": "f67a905e3613e03d7ad13cbbc63a8dc0bac30a69",
+        "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": "1be5d2fe9a0826470641eeef1f2e52fb817aac2d",
+        "docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md": "90dcb4b93bde163a164b842e1de4341b45b87e54",
+        "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md": "966eb1cfe1bc3debdb63fe1364c85408df52d1bf",
+        "docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md": "0626804f1108bb2e023a3bede794fd72405e6137",
+        "docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md": "c9e297c363bb76112a578bdf5ed73e0dab251b7f",
+        "docs/project-adoption/PROJECT_ADOPTION.md": "4061c96a94cbf07a058fe0c8e832319435c0a0d1",
+        "docs/protocol/DISPATCH_ROUTING_PROTOCOL.md": "631dfaa593d0b63246f8d6d537e08789a2d07d28",
+        "docs/task-package/TASK_PACKAGE_SPEC.md": "42b43f98c943bea7e49b5e22909b6c25fa49674d",
+        "templates/GOVERNANCE_CONFORMANCE_CHECK.py": "cf51a6b039e6c429a474bd2c079db6d1e486161f",
+        "templates/GOVERNANCE_CONFORMANCE_INPUT.yaml": "0da3afcb8a9306b885209c74f5fc393f0c46d3e3",
+        "templates/GOVERNANCE_CONFORMANCE_RESULT.yaml": "f9f3f95818515734fd65f9542768cf6abd9422fa",
+        "templates/GOVERNANCE_LOCK.yaml": "a14c61f2e7fb30d5980d15c773655eb947e8d91e",
+        "templates/LOCAL_POLICY.yaml": "93ac24d5892acd208cb22cbe145d24550d7c6ef5",
+        "templates/RESULT.md": "b5cc7e418725b31a38819cced712861117e09c68",
+        "tests/test_governance_conformance.py": "27438dcba37b94b0a3c53257950dd16015146c02"
+      },
+      "source_commit": "971458bfe2bde2963edac2bc33862ecc3b83999c",
+      "source_tree": "a6ab6f195b9c780e9ca36d1149a0252843602473"
+    },
+    "0.3.16": {
+      "blobs": {
+        "GOVERNANCE_RELEASE.yaml": "62158b3b96c87694139148383ed785df8fe158a0",
+        "README.md": "6c9009406f81b0402aaaa7266cac44ebd70ba1bd",
+        "VERSION": "ec96a6218d452ea14b7309f1724319877b3db22d",
+        "config/CONFORMANCE_POLICY.yaml": "9920e3af52296d214fe6186eeda9fe05e6a5ce24",
+        "config/DISPATCH_POLICY.yaml": "f10dda3c20eea7f0546ffddd2b08a01bfe08c7b8",
+        "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": "04c2dfc2c3a40f5a10a6edae94a861fb9c5eba5b",
+        "docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md": "f66764267a49018c1e862e37f03983725067d315",
+        "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md": "e52bbea814252699ac11fbb108e3db0822c08ff7",
+        "docs/task-package/TASK_PACKAGE_SPEC.md": "181f18c98fe07089d545979ea0c2fecc82a1405c",
+        "templates/GOVERNANCE_CONFORMANCE_CHECK.py": "dfd8602ccc7470e124dc0698e8516c891e1fa720",
+        "tests/test_governance_conformance.py": "d4b675aac504c15129a357cbd3a02d29e657302b"
+      },
+      "source_commit": "78f2936dec3185b76fe5b46a6e4e59d0f3751f41",
+      "source_tree": "2bdb916aae6b5f7bad85fb2c578448ab427cbff3"
+    }
+  },
+  "schema_version": "1.0"
+}

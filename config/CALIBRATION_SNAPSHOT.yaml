@@ -1,0 +1,92 @@
+schema_version: "0.2"
+last_updated: "2026-09-05"
+status: bootstrap_with_retrospective_priors
+
+# 该文件只保存匿名化、聚合后的全局校准结果。
+# 当前已有可审计历史证据，可形成 provisional prior；
+# 但尚未达到 prospective、跨项目样本门槛，因此不宣称存在稳定全局最优 Worker / Validator。
+
+policy:
+  require_multi_project_evidence_for_global_promotion: true
+  require_lead_controller_review: true
+  allow_project_local_override: true
+  allow_task_override: true
+  auto_promote_from_single_project: false
+  auto_demote_from_single_failure: false
+  separate_retrospective_and_prospective_evidence: true
+  anonymous_external_adopter_feedback_counts_as_distinct_project_source: false
+
+minimum_evidence:
+  min_total_samples_for_global_change: 20
+  min_distinct_project_sources: 2
+  min_recent_samples: 8
+
+cold_start:
+  mode: conservative_with_incumbent_prior
+  production_eligibility:
+    - qualified
+    - provisional_within_role_task_class_and_risk_ceiling
+  candidates_may_run_shadow_tasks: true
+  establish_baseline_with_low_and_medium_risk_tasks_first: true
+  matched_comparison_for_new_candidates: true
+
+priors:
+  bounded_worker:
+    - model: gpt-5.6-luna
+      status: provisional
+      evidence_type: retrospective_strong
+      eligible_task_classes:
+        - repo_navigation
+        - bounded_code_edit
+        - test_generation
+        - local_validation
+        - small_scope_debugging
+      risk_ceiling: medium
+      confidence: provisional
+      notes:
+        - "已有可审计历史实现任务与 Lead Controller 验收轨迹。"
+        - "复杂/高风险历史任务存在返工，因此当前不作为高风险默认 Worker。"
+
+    - model: gemini-3.7-flash
+      status: candidate
+      evidence_type: none_internal_yet
+      eligible_task_classes:
+        - matched_shadow_bounded_code_edit
+        - matched_shadow_debugging
+      confidence: unknown_internal
+      notes:
+        - "先通过 Bootstrap Qualification，再与 incumbent 在 matched tasks 上比较。"
+
+  validator:
+    - model: gpt-5.6-terra
+      status: provisional
+      evidence_type: retrospective_strong
+      eligible_task_classes:
+        - bounded_code_review
+        - regression_validation
+        - adversarial_verification
+      risk_ceiling: high
+      confidence: provisional
+
+    - model: gpt-5.6-luna
+      status: provisional
+      evidence_type: retrospective_strong
+      eligible_task_classes:
+        - bounded_code_review
+        - regression_validation
+      risk_ceiling: medium
+      confidence: provisional
+
+    - model: gemini-3.7-flash
+      status: candidate
+      evidence_type: none_internal_yet
+      eligible_task_classes:
+        - matched_shadow_validation
+      confidence: unknown_internal
+
+notes:
+  - "当前先验来自历史可审计任务回填，不等同于 prospective A/B calibration。"
+  - "新项目可继承 Luna/Terra 的 provisional 资格，但仍应在 calibration window 内重新观察。"
+  - "Gemini 等无内部历史的新模型应通过 matched shadow / provisional flow 追赶 incumbent，而不是永久处于劣势。"
+  - "达到跨项目和样本门槛后，再产生正式 task-class preferred 排名。"
+  - "没有稳定项目身份的匿名 external-adopter aggregate 可以作为补充/提示性证据，但不得为了满足 min_distinct_project_sources 而创建或保存 adopter pseudonym/hash，也不得被计作 distinct-project proof。"

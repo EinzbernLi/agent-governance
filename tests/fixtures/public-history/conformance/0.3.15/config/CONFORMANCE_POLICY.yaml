@@ -1,0 +1,149 @@
+schema_version: "0.1"
+policy_id: governance-conformance-v1
+authority_model: accepted_facts_evaluated_read_only
+
+status:
+  overall: [CONFORMANT, RECONCILIATION_REQUIRED, BLOCKED]
+  internal_drift: [CONFORMANT, DRIFT_RECONCILABLE, DRIFT_BLOCKING]
+  local_action: [ALLOW, BLOCK]
+  update_available_changes_status: false
+
+central_governance:
+  ordinary_version: "0.3.15"
+  release_schema: "0.9"
+  change_class: project_governance_conformance_and_local_deployment_enforcement
+  version_path: VERSION
+  release_path: GOVERNANCE_RELEASE.yaml
+  required_paths:
+    - README.md
+    - VERSION
+    - GOVERNANCE_RELEASE.yaml
+    - config/CONFORMANCE_POLICY.yaml
+    - config/DISPATCH_POLICY.yaml
+    - docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+    - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+    - docs/task-package/TASK_PACKAGE_SPEC.md
+    - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+    - docs/project-adoption/PROJECT_ADOPTION.md
+    - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+    - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+    - templates/GOVERNANCE_LOCK.yaml
+    - templates/LOCAL_POLICY.yaml
+    - templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+    - templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+    - templates/GOVERNANCE_CONFORMANCE_CHECK.py
+    - tests/test_governance_conformance.py
+  required_markers:
+    config/DISPATCH_POLICY.yaml:
+      - "bounded_worker_internal_delegation_allowed: false"
+      - "while_child_running_no_substantive_progress_inspection: true"
+      - "terminal_handoff_required_before_result_read: true"
+    docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
+      - AWAIT_OWNER_CONTINUE
+      - later explicit Owner
+    docs/task-package/TASK_PACKAGE_SPEC.md:
+      - stable copy-oriented
+      - editable drafting surface
+    docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md:
+      - conformance Result
+      - independent validation
+    docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md:
+      - fresh takeover or reconciliation
+      - new Task activation
+      - governance adoption or update
+      - independent-module repin
+      - before local deploy, migrate or retire
+      - before release acceptance
+      - after material topology change
+  accepted_0_3_14_replay:
+    ordinary_version: "0.3.14"
+    release_schema: "0.8"
+    change_class: native_dispatch_accountability_and_observation_discipline
+    required_paths:
+      - README.md
+      - VERSION
+      - GOVERNANCE_RELEASE.yaml
+      - config/DISPATCH_POLICY.yaml
+      - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+      - docs/task-package/TASK_PACKAGE_SPEC.md
+      - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md
+      - docs/project-adoption/PROJECT_ADOPTION.md
+      - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+      - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+      - templates/GOVERNANCE_LOCK.yaml
+      - templates/LOCAL_POLICY.yaml
+    required_markers:
+      config/DISPATCH_POLICY.yaml:
+        - "bounded_worker_internal_delegation_allowed: false"
+        - "while_child_running_no_substantive_progress_inspection: true"
+        - "terminal_handoff_required_before_result_read: true"
+      docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
+        - AWAIT_OWNER_CONTINUE
+        - later explicit Owner
+
+independent_modules:
+  lprl:
+    release_key: lprl
+    root_path: modules/local-resource-lifecycle
+    version_path: modules/local-resource-lifecycle/VERSION
+    independent_pin_required: true
+    silent_repin_forbidden: true
+
+downstream_project:
+  lock_schema_versions: ["0.6"]
+  local_policy_schema_versions: ["0.4"]
+  required_durable_refs: [lead_ref, lead_digest, task_ref, task_digest, project_state_digest]
+  copied_central_semantics_may_weaken: false
+  automatic_pin_advance_allowed: false
+  auto_follow_main_allowed: false
+
+local_action:
+  resource_types: [Source, Workspace, Deployment, State, Data, Evidence, Cache]
+  actions: [create, reuse, modify, migrate, retire]
+  accepted_root_sources: [owner_supplied, owner_confirmed]
+  guessed_root_sources: [cwd, HOME, TEMP, repository_name, historical_path, adjacent_directory, inferred]
+  decision_is_derived: true
+  evaluator_performs_action: false
+
+drift_triggers:
+  - fresh_takeover_or_reconciliation
+  - new_task_activation
+  - governance_adoption_or_update
+  - independent_module_repin
+  - before_local_deploy_migrate_or_retire
+  - before_release_acceptance
+  - after_material_topology_change
+
+side_effects:
+  network_calls_allowed: false
+  authority_writes_allowed: false
+  filesystem_mutation_allowed: false
+  project_discovery_allowed: false
+  automatic_quarantine_or_cleanup_allowed: false
+  central_registry_allowed: false
+  telemetry_or_phone_home_allowed: false
+
+presentation:
+  formal_launcher: stable_copy_oriented_thin_block
+  editable_drafting_surface_is_formal_launcher: false
+  durable_task_remains_authority: true
+
+maximum_write_surface:
+  - config/CONFORMANCE_POLICY.yaml
+  - docs/conformance/GOVERNANCE_CONFORMANCE_PROTOCOL.md
+  - templates/GOVERNANCE_CONFORMANCE_INPUT.yaml
+  - templates/GOVERNANCE_CONFORMANCE_RESULT.yaml
+  - templates/GOVERNANCE_CONFORMANCE_CHECK.py
+  - tests/test_governance_conformance.py
+  - README.md
+  - VERSION
+  - GOVERNANCE_RELEASE.yaml
+  - CHANGELOG.md
+  - docs/project-adoption/PROJECT_ADOPTION.md
+  - docs/project-adoption/GOVERNANCE_CURRENCY_PROTOCOL.md
+  - docs/project-adoption/LOCAL_RESOURCE_ONBOARDING.md
+  - templates/GOVERNANCE_LOCK.yaml
+  - templates/LOCAL_POLICY.yaml
+  - docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md
+  - docs/task-package/TASK_PACKAGE_SPEC.md
+  - docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md

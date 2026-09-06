@@ -1,0 +1,105 @@
+schema_version: "1.0"
+last_updated: "2026-08-27"
+canonical_dispatch_policy: "config/DISPATCH_POLICY.yaml"
+
+# Ordinary-task compliance checks execution boundaries, not hidden model metadata.
+
+ordinary_task_gate:
+  required_checks:
+    - task_readable
+    - assigned_role_and_scope
+    - forbidden_boundary
+    - permission_boundary
+    - substantive_evidence_boundary_when_required
+    - fact_source_available
+    - result_sink_available
+    - mutation_authorization
+    - destructive_or_irreversible_gate_when_applicable
+    - complete_minimal_task_package_when_delegated
+    - material_dispatch_decision_evidence_when_applicable
+    - delegated_lifecycle_and_terminal_handoff
+    - parent_observation_discipline
+    - validator_independence_boundary_when_required
+  internal_exact_model_check: false
+  internal_reasoning_check: false
+  child_self_identity_required: false
+
+input_context:
+  ambient_control_context:
+    allowed: true
+    may_supply_unapproved_substantive_facts: false
+  unauthorized_substantive_evidence:
+    contaminates_independent_validation: true
+
+nested_delegation:
+  default_allowed: false
+  task_opt_in_required: true
+  opt_in_only: true
+  task_or_lead_authorization_required: true
+  parent_remains_accountable: true
+  bounded_independently_understandable_subproblem_required: true
+  material_benefit_required: true
+  explicit_write_or_resource_ownership_required: true
+  unsafe_shared_write_conflict_forbidden: true
+  may_not_expand: [scope, permissions, forbidden_boundary, substantive_evidence_boundary, result_sink]
+  cross_platform_without_lead_reroute: false
+  forbidden_without_opt_in: true
+
+dispatch_decision:
+  material_evidence_fields: [profile, native_dispatch_available, work_suitable_for_native_delegate, selected_route, bypass_reason]
+  capability_suitability_route_are_separate: true
+  native_preferred_direct_bypass_requires_bounded_reason: true
+  quota_saving_alone_is_not_a_valid_bypass_reason: true
+
+delegated_execution:
+  canonical_lifecycle:
+    - ROUTE_RESOLVED
+    - TASK_PACKAGE_FROZEN
+    - DISPATCHED
+    - CHILD_RUNNING
+    - PARENT_WAITING
+    - COMPLETED
+    - BLOCKED
+    - NEEDS_ATTENTION
+    - ABORTED
+    - RESULT_READ
+    - LEAD_INTEGRATION
+    - VALIDATION_ACCEPTANCE
+  terminal_handoff_required_before_result_read: true
+  default_wait_mode: event_or_blocking_or_long_event
+  while_child_running_no_substantive_progress_inspection: true
+  fallback_without_event_wait: bounded_low_frequency_terminal_status_only
+  fallback_status_must_not_fetch_substantive_output: true
+  allowed_intervention_reasons: [owner_status_request, timeout, runtime_abnormality_or_error, child_blocked_or_needs_attention, safety_scope_or_shared_write_risk, required_interrupt_cancel_or_retask]
+
+validator_independence:
+  material_midflight_substantive_intervention_contaminates: true
+  ambient_control_context_alone_is_not_contamination: true
+  fresh_substantively_independent_validation_required_when_contaminated: true
+
+blocked_reason_codes:
+  - TASK_UNREADABLE
+  - SCOPE_VIOLATION
+  - FORBIDDEN_BOUNDARY_VIOLATION
+  - PERMISSION_EXPANSION
+  - UNAUTHORIZED_SUBSTANTIVE_EVIDENCE
+  - FACT_SOURCE_UNAVAILABLE
+  - RESULT_SINK_UNAVAILABLE
+  - MUTATION_NOT_AUTHORIZED
+  - UNAUTHORIZED_NESTED_DELEGATION
+  - UNAUTHORIZED_CROSS_PLATFORM_DELEGATION
+  - ACCEPTANCE_CRITERIA_NOT_MET
+
+special_model_identity_mode:
+  explicit_task_only: true
+  protocol: docs/protocol/EXECUTOR_REASONING_COMPLIANCE.md
+  enabled_for: [model_qualification, model_benchmark, exact_runtime_identity_experiment]
+
+invariants:
+  - "ordinary_compliance_is_about_task_boundaries_and_evidence"
+  - "hidden_internal_model_metadata_is_not_an_ordinary_gate"
+  - "nested_delegation_default_false_and_opt_in_only"
+  - "routine_execution_difficulty_is_not_a_blocker"
+  - "parent_waits_without_substantive_progress_inspection"
+  - "material_validator_contamination_requires_fresh_independent_validation"
+  - "final_acceptance_belongs_to_lead_controller"

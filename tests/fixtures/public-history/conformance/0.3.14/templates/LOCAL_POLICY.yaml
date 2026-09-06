@@ -1,0 +1,76 @@
+schema_version: "0.4"
+project_name: ""
+
+# 项目自己的局部规则。不得复制并修改中央治理协议来替代本文件。
+
+protected_paths:
+  # - "src/core/**"
+  # - "src/schema/**"
+
+worker_default_allowed_paths:
+  # - "tests/**"
+  # - "tools/**"
+  # - "docs/**"
+
+required_tests:
+  # - "pytest -q"
+
+project_specific_constraints:
+  # - "示例：坐标系约定不得在普通 Worker 任务中修改"
+
+core_change_policy:
+  require_explicit_task_authorization: true
+  require_lead_controller_review: true
+  require_adr_when_architecture_changes: true
+
+validation_policy:
+  high_risk_requires_independent_validator: true
+  critical_risk_requires_independent_validator: true
+
+# 可选的项目级执行经济偏好。null 表示使用中央治理的 runtime/Owner policy 与 balanced fallback。
+# 这里只能选择 route preference，不能覆盖 Task executor、模型资格、capability probe、权限或独立验证要求。
+execution_economy:
+  supported_profiles:
+    - lead_direct_preferred
+    - native_delegate_preferred
+    - balanced
+  profile: null
+  may_override_task_executor: false
+  may_override_model_qualification: false
+  may_override_runtime_capability_probe: false
+  may_weaken_independent_validation: false
+  may_trigger_owner_relay_for_quota_only_when_direct_compliant: false
+
+# Project-local model calibration is derived, local-only routing evidence.
+# New GitHub projects may enable it without an extra Owner question because it neither exports data nor changes authority.
+# Existing project policy, an explicit Owner opt-out, or unavailable GitHub Actions always wins.
+model_calibration:
+  enabled: true
+  automatic_outcome_extraction: true
+  state_transport: github_issue
+  state_title: "[PROJECT-LOCAL-CALIBRATION] Derived model routing prior"
+  state_is_derived_cache_only: true
+  state_may_override_task_result_acceptance_authority: false
+  state_may_auto_qualify_unqualified_model: false
+  workflow_may_write_repository_contents: false
+  upstream_export: false
+  adopter_registration: false
+  required_usage_telemetry: false
+  required_cost_or_latency_telemetry: false
+  incomplete_or_malformed_state_may_influence_routing: false
+
+# 可选。只有项目启用 LPRL 时填写实际状态。
+local_resource_policy:
+  mode: "disabled" # disabled|planning_only|tracking
+  project_root:
+    source: "owner_supplied"
+    absolute_path_in_git: false
+    confirmed_for_current_local_runtime: false
+  require_local_filesystem_capability_for_inspection: true
+  require_local_filesystem_capability_for_write: true
+  allow_agent_to_choose_or_relocate_project_root: false
+  allow_write_outside_owner_supplied_project_root: false
+  planning_only_authorizes_local_inspection: false
+  planning_only_authorizes_local_write: false
+  tracking_authorizes_migration_or_cleanup: false
+  first_local_write_requires_explicit_owner_authorization: true

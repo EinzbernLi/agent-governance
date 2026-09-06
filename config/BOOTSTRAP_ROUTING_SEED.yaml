@@ -1,0 +1,67 @@
+schema_version: "0.1"
+last_updated: "2026-08-27"
+status: external_evidence_seed_only
+
+# 说明：
+# - 本文件不是资格认证结果，只规定在缺少内部数据时的初始试验顺序。
+# - 任何候选进入真实生产任务前，应先通过 Bootstrap Qualification。
+# - reasoning 使用通用 profile + 厂商原生档位，禁止跨厂商标签等价。
+
+seed_policy:
+  prefer_safe_and_verifiable_tasks_first: true
+  require_bootstrap_qualification_before_production: true
+  use_cross_vendor_validation_when_practical: true
+  replace_seed_with_calibration_snapshot_when_evidence_is_sufficient: true
+
+task_classes:
+  repo_navigation_and_light_maintenance:
+    candidates:
+      - model: gpt-5.6-luna
+        reasoning_profile: balanced
+        rationale: "轻量、低风险、易验证任务的初始候选；需本地准入测试确认。"
+      - model: gemini-3.7-flash
+        reasoning_profile: balanced
+        rationale: "适合代码与 Agent 工作流的通用候选。"
+      - model: gemini-3.8-flash
+        reasoning_profile: balanced
+        rationale: "作为安全、可验证任务的全新候选；仅用于 shadow、qualification 或 evidence acquisition，不授予生产变更权限。"
+
+  bounded_code_edit:
+    candidates:
+      - model: gemini-3.7-flash
+        reasoning_profile: balanced
+        rationale: "作为局部代码修改的高性价比初始候选；先验证 scope control 与本地执行可靠性。"
+      - model: gpt-5.6-terra
+        reasoning_profile: balanced
+        rationale: "作为更高可靠性的交叉候选与 fallback。"
+
+  complex_multi_file_or_debugging:
+    candidates:
+      - model: gpt-5.6-terra
+        reasoning_profile: deep
+        rationale: "作为长程、多文件和困难调试的保守初始候选。"
+      - model: gemini-3.7-flash
+        reasoning_profile: deep
+        rationale: "作为并行或成本敏感的复杂任务候选。"
+
+  independent_validation:
+    strategy: different_model_family_when_practical
+    candidates:
+      - model: gpt-5.6-terra
+        reasoning_profile: deep
+      - model: gemini-3.7-flash
+        reasoning_profile: deep
+      - model: gemini-3.8-flash
+        reasoning_profile: deep
+
+escalation:
+  - from: bounded_code_edit
+    condition: repeated_failure_or_uncertainty
+    action: "raise native reasoning within adapter limits, then consider Terra or return to Lead Controller"
+  - from: complex_multi_file_or_debugging
+    condition: core_architecture_change_required
+    action: "return to Lead Controller instead of endlessly escalating Worker"
+
+notes:
+  - "这是冷启动 seed，不是模型能力排行榜。"
+  - "项目真实验收数据应逐步覆盖这些初始建议。"

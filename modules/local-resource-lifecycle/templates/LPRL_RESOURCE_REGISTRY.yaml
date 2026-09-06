@@ -1,0 +1,193 @@
+schema_version: "0.2.5-pilot"
+project_id: "<project-local-id>"
+registry_status: draft # draft|frozen|invalidated
+
+digests:
+  fact_digest: null # lprl-cjson-v1 / registry_facts; excludes this entire digests object
+  full_record_digest: null # lprl-cjson-v1 / registry_full_record; excludes this field only
+  fact_digest_scope:
+    profile: lprl-cjson-v1
+    projection: registry_facts
+    include: "schema_version, project_id, topology_inventory facts, physical_containers, resources factual fields, topology_edges"
+    exclude:
+      - "digests"
+      - "registry_status"
+      - "last_verified"
+      - "verification_basis"
+      - "resources[].lifecycle_status"
+      - "resources[].accepted_gate_bundle_ref"
+      - "topology_inventory.inventory_digest"
+  full_record_digest_scope: registry_full_record
+
+last_verified: null
+verification_basis: []
+
+topology_inventory:
+  inventory_id: "topology-inventory-000"
+  observed_at: null
+  # These arrays define the explicit topology discovery seed/scope. They are
+  # not an implicit whole-project completeness claim.
+  discovery_scope_resource_ids: []
+  discovery_scope_component_ids: []
+  discovery_methods: []
+  # Complete comparison set for the declared scope, including every applicable
+  # touching/reachable edge and protected/shared-owner closure endpoint.
+  edge_ids: []
+  protected_or_shared_owner_refs: []
+  # True only when the declared scope and its mutation-side-effect closure are
+  # fully discovered. When true, unresolved_regions must remain empty.
+  coverage_complete: false
+  unresolved_regions: []
+  inventory_digest: null # lprl-cjson-v1 / topology_inventory; excludes this field only
+
+# Physical/container scopes may be topology endpoints without becoming logical
+# resources. Use this collection instead of inventing a workspace resource only
+# to make an edge endpoint resolvable.
+physical_containers:
+  - container_id: "container-000"
+    relative_or_machine_local_ref: null
+    container_kind: other # project_workspace_container|orchestration_workspace_container|deployment_root|other
+    operational_role: null
+    protection_status: PROTECTED
+    logical_resource_created: false
+    resource_refs: []
+    component_refs: []
+    storage_object_refs: []
+    notes: null
+
+resources:
+  - resource_id: "resource-000"
+    type: workspace # source|workspace|deployment|state|data|evidence|cache
+    role_or_slot: null
+    lifecycle_status: UNKNOWN # derived; excluded from fact_digest
+    protection_status: PROTECTED
+    authoritative: null
+    reconstructable: null
+    reconstructability_proof_ref: null
+    unique_value_status: UNKNOWN
+
+    components:
+      - component_id: "component-000"
+        type: workspace
+        physical_location_refs: []
+        state_binding_refs: []
+        data_binding_refs: []
+        evidence_refs: []
+        reconstructable: null
+        unique_value_status: UNKNOWN
+
+    physical_locations:
+      - location_id: "location-000"
+        relative_or_machine_local_ref: null
+        location_kind: directory # file|directory|database|volume|object_store|other
+        operational_role: null # controlled_development|upstream_deployed_reference|deployment_runtime|validation|reference|other
+        protection_status: PROTECTED
+        storage_object_refs: []
+
+    topology_refs: []
+
+    # Identity of the Source content represented by this resource/location.
+    # This is not the same thing as the machine-local path that currently holds
+    # a copy of that Source.
+    source_identity:
+      repository_or_store_ref: null
+      commit: null
+      tree: null
+      artifact_digest: null # external artifact hash; informational provenance, not an LPRL structured digest
+
+    # Provenance describes where the Source identity came from and how it
+    # relates to that origin. It is factual metadata only: it does not grant
+    # action authority and does not prove reconstructability or retirement.
+    source_provenance:
+      origin_ref: null
+      relationship_to_origin: unknown # canonical|upstream|fork|mirror|vendor_copy|deployment_copy|generated|unknown
+      controlled_project_source: null
+      evidence_refs: []
+
+    # Structured Source/config deployment-definition facts. Presence of a
+    # definition never proves that a runtime Deployment exists.
+    deployment_definitions:
+      - definition_id: "deployment-definition-000"
+        definition_kind: other # compose|dockerfile|service_config|manifest|script|other
+        source_component_ref: null
+        declared_services: []
+        declared_images: []
+        declared_ports: []
+        declared_volumes: []
+        dockerfile_refs: []
+        healthcheck_declared: null
+        runtime_deployment_ref: null
+        evidence_refs: []
+        notes: null
+
+    # Equality-only observations are deliberately weaker than artifact_digest.
+    # They prove only the recorded comparison result and carry no provenance,
+    # Evidence-acceptance, reconstructability, lifecycle or action authority.
+    equality_observations:
+      - observation_id: "equality-observation-000"
+        algorithm: null
+        digest: null # equality_check_only observation; non-authority informational hash
+        compared_refs: []
+        semantics: equality_check_only
+        authority_effect: none
+        observed_at: null
+        evidence_refs: []
+
+    source_unique_value_proof:
+      proof_id: "source-proof-000"
+      observed_at: null
+      tracked_checked: false
+      staged_or_uncommitted_checked: false
+      untracked_checked: false
+      ignored_checked: false
+      local_refs_checked_or_not_applicable: false
+      unpushed_commits_checked_or_not_applicable: false
+      non_git_content_checked: false
+      unresolved_unique_source_data_evidence: null
+      evidence_refs: []
+
+    active_tasks: []
+
+    writer_custody:
+      status: UNKNOWN # CLEAR|ACTIVE|WRITER_INCONCLUSIVE|NOT_APPLICABLE
+      writer_ids: []
+      custodian: null
+      observation_window_ref: null
+      fencing_method_ref: null
+      revalidation_ref: null
+      last_verified: null
+
+    state_bindings: []
+    data_bindings: []
+
+    retention:
+      class: null
+      hold_status: null
+      hold_reason: null
+      rollback_or_recovery_role: null
+
+    evidence_manifest_refs: []
+    deployment_manifest_ref: null
+    storage_object_refs: []
+
+    accepted_gate_bundle_ref: null # derived decision ref; excluded from fact_digest
+    required_next_proof: []
+    notes: null
+
+topology_edges:
+  - edge_id: "edge-000"
+    relation: null # parent_repo|linked_worktree|contains|shared_object_store|hardlink|reparse|symlink|deployment_state|resource_evidence|source_derivation|other
+    from_ref: null
+    to_ref: null
+    mutation_side_effects: []
+    protected_parent_or_owner_ref: null
+    evidence_refs: []
+    status: UNKNOWN
+
+# Every topology edge endpoint must resolve to a declared resource, component,
+# physical location, or physical_containers[] entry. A physical container does
+# not become a logical resource merely because an edge points to it.
+#
+# Topology PASS is impossible unless topology_inventory.coverage_complete is true,
+# its edge_ids are the canonical comparison set, and the evaluator proves the
+# scoped edge/owner closure with no missing or extra references.

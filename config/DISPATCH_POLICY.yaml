@@ -1,0 +1,304 @@
+schema_version: "1.6"
+last_updated: "2026-09-06"
+
+principles:
+  one_active_lead_controller: true
+  same_project_parallel_workers_allowed: true
+  parallel_workers_never_claim_project_lead: true
+  parallel_write_overlap_default_forbidden: true
+  probe_before_route: true
+  never_infer_native_dispatch_from_channel_name: true
+  github_is_task_result_fact_source: true
+  owner_is_activation_relay_not_content_relay: true
+  lead_native_dispatch_is_not_nested_worker_delegation: true
+  role_stable_session_reuse_default: true
+  fresh_session_only_when_task_requires: true
+  bounded_worker_internal_delegation_default_without_runtime_or_task_policy: false
+  codex_worker_internal_delegation_default_allowed: true
+  web_worker_internal_delegation_default_allowed: false
+  execution_economy_is_route_preference_not_model_qualification: true
+  capability_probe_outranks_economy_hint: true
+  owner_relay_not_for_quota_only_when_direct_compliant: true
+  material_dispatch_decision_evidence_required: true
+  delegated_observation_discipline_is_terminal_event_first: true
+  validator_contamination_requires_fresh_independent_validation: true
+  runtime_mode_is_capability_defined_not_client_brand_defined: true
+  profile_names_are_compatibility_identifiers_not_brand_requirements: true
+  web_interactive_means_non_native_delegating_runtime: true
+  codex_native_subagents_means_native_subagent_capable_runtime: true
+
+lead_core_responsibilities:
+  owner: config/DISPATCH_POLICY.yaml
+  one_active_lead: true
+  runtime_independent: true
+  lead_retains_terminal_accountability: true
+  responsibilities: [architecture, task_decomposition_freeze, scope_permission_high_risk, worker_validator_coordination, sibling_integration, exception_reanchor_replan, final_acceptance]
+  delegation:
+    bounded: true
+    authority_transfer: false
+    preference_only: true
+  forbidden_worker_child_authority: [claim_project_lead, integrate_siblings, final_acceptance]
+  labels_not_capability_proof: true
+
+session_continuity:
+  role_stable_reuse_default: true
+  durable_reanchor_required_before_reuse: true
+  recommendations: [reuse_existing, recommend_new, must_be_fresh]
+  must_be_fresh_when: [task_contract_requires_fresh_session, task_contract_requires_identity_isolation]
+
+runtime_capability_probe:
+  scope: current_lead_session
+  persist_by_default: false
+  cache_for_session: true
+  re_probe_on: [lead_runtime_change, client_or_agent_mode_change, tool_or_permission_change, native_dispatch_capability_change, target_executor_not_covered_by_cached_probe]
+  evidence_precedence: [current_runtime_tool_or_agent_inventory, current_runtime_capability_metadata, successful_current_session_dispatch_evidence, explicitly_marked_runtime_hint]
+  field_schema:
+    native_subagent_dispatch:
+      enum: [available, partial, unavailable, unknown]
+    native_reachable_executors:
+      type: list
+    native_reasoning_selection:
+      enum: [available, partial, unavailable, unknown]
+    native_isolated_context:
+      enum: [available, unavailable, unknown]
+    github_read:
+      enum: [available, unavailable, unknown]
+    github_write:
+      enum: [available, unavailable, unknown]
+    external_owner_activation:
+      enum: [available, unavailable, unknown]
+
+runtime_placement_policy:
+  purpose: choose_required_execution_surface_before_execution_economy_tiebreaks
+  local_materialization_required:
+    triggers: [local_checkout_required, local_file_read_or_write_required, local_workspace_or_worktree_required, local_software_or_runtime_required, local_test_execution_required, local_artifact_generation_or_validation_required]
+    preferred_surface: codex
+    policy: codex_required_by_default
+    web_exception_requires_bounded_reason: true
+  no_local_materialization_required:
+    preferred_surface: web
+    policy: web_preferred
+    representative_work: [github_durable_fact_read, remote_authority_reconciliation, governance_judgment, issue_or_pr_review_without_local_checkout, remote_documentation_or_evidence_review]
+  higher_precedence_constraints: [explicit_task_executor_or_role_requirement, model_qualification_and_material_suitability, independent_validation_or_evidence_isolation, safety_permission_and_forbidden_boundaries, proven_runtime_capability, task_specific_software_or_artifact_requirement]
+  placement_is_execution_preference_not_authority: true
+  placement_may_change_task_scope_or_permissions: false
+
+runtime_profiles:
+  mode: delta_only
+  capability_probe_outranks_profile_or_client_label: true
+  full_core_copies_allowed: false
+  profiles:
+    web_interactive:
+      execution_economy_profile: lead_direct_preferred
+      direct_vs_delegate_preference_among_already_compliant_choices: lead_direct_preferred
+      delegable_preparation_preference: optional
+      wait_or_transport_preference: current_session_when_compliant
+      launcher_presentation_hint: deterministic_thin_launcher
+    codex_native_subagents:
+      execution_economy_profile: native_delegate_preferred
+      direct_vs_delegate_preference_among_already_compliant_choices: native_delegate_preferred
+      delegable_preparation_preference: [repository_reconnaissance, evidence_collection, contradiction_scan, mechanical_comparison, bounded_code_edit, draft_preparation, test_generation, tests_and_replay, readback_verification]
+      wait_or_transport_preference: terminal_event_first
+      launcher_presentation_hint: deterministic_thin_launcher
+    generic:
+      execution_economy_profile: balanced
+      direct_vs_delegate_preference_among_already_compliant_choices: balanced
+      delegable_preparation_preference: neutral
+      wait_or_transport_preference: compliant_available_route
+      launcher_presentation_hint: deterministic_thin_launcher
+
+web_external_assignment_placement:
+  applies_only_to_profile: web_interactive
+  after_external_dispatch_is_required: true
+  local_environment_required_preferred_surface: external_local_agent
+  no_local_environment_required_preferred_surface: external_web_conversation
+  session_freshness_remains_owned_by_session_continuity: true
+  external_transport_does_not_reclassify_originating_runtime_profile: true
+  native_agent_cross_software_external_route_uses_web_external_placement: false
+  placement_is_preference_not_route_authority: true
+
+codex_worker_native_delegation:
+  applies_when: [assigned_execution_surface_is_codex, native_child_capability_is_proven]
+  default_allowed: true
+  child_use_optional: true
+  valid_material_benefits: [sol_or_terra_quota_preservation, context_isolation, elapsed_time_reduction, specialization]
+  cheaper_child_must_be_qualified_for_actual_subproblem_and_risk: true
+  parent_worker_retains_scope_permission_integration_and_terminal_result_accountability: true
+  child_may_expand_scope_permissions_forbidden_boundary_or_result_sink: false
+  child_review_counts_as_independent_validation: false
+  child_write_ownership_required: true
+  parallel_child_writes_require_pairwise_disjoint_scope: true
+  overlapping_child_writes_action: serialize_or_fail
+  child_recursive_delegation_default: false
+  uncontrolled_recursive_agent_tree_allowed: false
+  ordinary_success_requires_full_child_transcript_or_hidden_identity_chain: false
+
+execution_economy:
+  purpose: prefer_among_already_compliant_qualified_execution_choices
+  supported_profiles: [lead_direct_preferred, native_delegate_preferred, balanced]
+  fallback_profile: balanced
+  precedence_over_economy: [explicit_task_executor_or_role_requirement, safety_permission_and_forbidden_boundaries, model_qualification_and_material_suitability, task_required_local_filesystem_software_or_artifact_capability, independent_validation_or_distinct_role_requirement, current_runtime_capability_probe]
+  profile_resolution: [explicit_task_override_when_task_contract_allows_route_preference, project_local_policy_override, explicit_owner_or_runtime_policy, runtime_mode_hint, fallback_profile]
+  project_local_policy_path: templates/LOCAL_POLICY.yaml
+  project_local_profile_field: execution_economy.profile
+  runtime_profile_source: runtime_profiles.profiles
+  runtime_profile_is_capability_proof: false
+  runtime_profile_is_model_qualification_proof: false
+
+  profiles:
+    lead_direct_preferred:
+      preferred_route_order: [current_session, native_dispatch, external_owner_launch, blocked]
+      prefer_current_session_when: [lead_is_allowed_qualified_candidate_for_bounded_work, current_tools_and_permissions_are_sufficient, no_distinct_role_or_independence_requirement, no_required_local_runtime_or_material_suitability_reason_to_dispatch]
+      external_owner_launch_for_quota_savings_only: forbidden
+      still_dispatch_when_required_by: [explicit_task_assignment, distinct_formal_role, independent_validation, required_local_or_software_capability, materially_better_qualified_executor]
+
+    native_delegate_preferred:
+      preferred_route_order: [native_dispatch, current_session, external_owner_launch, blocked]
+      prefer_native_for: [bounded_implementation, mechanical_repository_work, tests_and_replay, suitable_validator_work]
+      lead_core_responsibilities_ref: lead_core_responsibilities
+      native_dispatch_must_be_proven_available: true
+      native_reachable_executor_must_be_qualified: true
+      trivial_atomic_step_may_remain_current_session_when_orchestration_overhead_is_disproportionate: true
+      unavailable_or_unknown_native_dispatch_fallback: compliant_next_route
+      direct_bypass_requires_bounded_auditable_reason: true
+      lead_quota_and_context_isolation_intent: true
+
+    balanced:
+      preferred_route_order: [current_session, native_dispatch, external_owner_launch, blocked]
+      strong_direct_or_delegate_bias: false
+
+routing:
+  executor_candidate_authority: [explicit_task_executor_override, project_local_calibration, config/MODEL_ROUTING.yaml]
+  candidate_resolution:
+    exact_task_executor_if_present: fixed_and_outranks_economy
+    otherwise: ranked_qualified_candidates_from_model_routing_and_calibration
+    material_suitability_difference_outranks_economy: true
+    materially_equivalent_compliant_candidates_may_be_tiebroken_by_economy: true
+  reasoning_assignment_authority: [task_override, project_local_calibration, config/REASONING_ADAPTERS.yaml]
+  route_preference_authority: [execution_economy_after_all_higher_precedence_constraints]
+  route_candidates: [current_session, native_dispatch, external_owner_launch, blocked]
+
+  current_session:
+    condition: current Lead session is an allowed qualified candidate for the bounded Task and all higher-precedence role/scope/capability/independence constraints permit it
+    owner_action_required: false
+
+  native_dispatch:
+    condition: current Lead runtime has proven native reachability to a qualified candidate selected under the Task and suitability constraints
+    owner_action_required: false
+    child_instruction: "执行 <task_ref>；先读取 Issue/指定 comment；作为该 Task 的执行者，不接管项目 Lead。"
+    lead_orchestration_not_nested_delegation: true
+    role_stable_session_reuse_allowed: true
+    never_inferred_from_channel_label: true
+
+  external_owner_launch:
+    condition: a distinct compliant external assigned Agent session is required or selected after higher-precedence constraints and preferred local/native routes are unavailable or explicitly bypassed
+    requirements: [github_read, github_write_or_defined_result_sink, external_owner_activation]
+    owner_action_required: true
+    quota_savings_alone_when_direct_compliant: forbidden
+    owner_instruction: "执行 <task_ref>；先读取 Issue/指定 comment；作为该 Task 的执行者，不接管项目 Lead。"
+    one_formal_task_one_assigned_session_by_default: true
+    new_session_not_required_by_default: true
+    role_stable_session_reuse_allowed: true
+    fresh_session_only_when_task_requires: true
+
+  blocked:
+    condition: no compliant route remains after Task, safety, model, capability, independence and economy resolution
+
+  material_dispatch_decision:
+    required_fields: [profile, native_dispatch_available, work_suitable_for_native_delegate, selected_route, bypass_reason]
+    capability_available_is_separate_from_suitability: true
+    suitability_is_separate_from_selected_route: true
+    selected_route_must_be_one_of: [current_session, native_dispatch, external_owner_launch, blocked]
+    native_preferred_direct_bypass_requires_reason: true
+    valid_bypass_reason_classes: [explicit_task_or_role_requirement, safety_permission_or_forbidden_boundary, capability_qualification_or_suitability_constraint, independent_validation_or_evidence_isolation, trivial_or_tightly_coupled_control_plane_step, disproportionate_orchestration_overhead, runtime_abnormality_or_safe_fallback, explicit_owner_or_task_route_override]
+    quota_saving_alone_is_not_a_valid_bypass_reason: true
+
+  delegated_lifecycle:
+    canonical_states: [ROUTE_RESOLVED, TASK_PACKAGE_FROZEN, DISPATCHED, CHILD_RUNNING, PARENT_WAITING, COMPLETED, BLOCKED, NEEDS_ATTENTION, ABORTED, RESULT_READ, LEAD_INTEGRATION, VALIDATION_ACCEPTANCE]
+    terminal_handoff_required_before_result_read: true
+
+  parent_observation:
+    default_wait_mode: event_or_blocking_or_long_event
+    while_child_running_no_substantive_progress_inspection: true
+    unsolicited_progress_requests_allowed: false
+    repeated_substantive_polling_allowed: false
+    intermediate_patch_or_result_reads_for_monitoring_allowed: false
+    fallback_without_event_wait: bounded_low_frequency_terminal_status_only
+    fallback_status_must_not_fetch_substantive_output: true
+    allowed_intervention_reasons: [owner_status_request, timeout, runtime_abnormality_or_error, child_blocked_or_needs_attention, safety_scope_or_shared_write_risk, required_interrupt_cancel_or_retask]
+
+  validator_independence:
+    material_midflight_substantive_intervention_contaminates: true
+    ambient_control_context_alone_is_not_contamination: true
+    fresh_substantively_independent_validation_required_when_contaminated: true
+
+parallel_workstreams:
+  enabled: true
+  authority: active_lead_plus_task_package
+  task_mode_required: parallel_safe
+  does_not_create_new_authority_store: true
+  worker_may_claim_project_lead: false
+  worker_may_modify_lead_claim_sink: false
+  worker_may_integrate_sibling_work: false
+  lead_owns_integration_and_final_acceptance: true
+  required_before_concurrent_dispatch: [exact_frozen_baseline, explicit_task_scope, explicit_allowed_and_forbidden_write_scope, declared_dependencies, no_unmet_ordering_dependency, pairwise_disjoint_write_scope, isolated_write_surface_for_implementation_tasks]
+
+  overlap_policy:
+    read_scope_overlap_allowed: true
+    write_scope_overlap_allowed_by_default: false
+    shared_mutable_state_write_allowed_by_default: false
+    same_file_multiwriter_allowed_by_default: false
+    append_only_result_sink_sharing_allowed_when_task_refs_remain_unambiguous: true
+    merge_conflict_is_not_coordination_mechanism: true
+
+  drift_policy:
+    if_sibling_merge_invalidates_write_scope_or_dependency_assumptions: lead_rebase_replan_or_serialise
+    worker_may_silently_widen_scope_to_follow_new_baseline: false
+
+  non_goals: [distributed_lock, agent_bus, session_database, second_lead_store, workspace_manager]
+
+unknown_resolution:
+  native_dispatch_unknown:
+    use_low_cost_current_metadata_first: true
+    prefer_known_compliant_direct_or_external_path_over_speculative_native: true
+    live_spawn_probe_only_if_low_cost_non_mutating_and_material: true
+  never_treat_unknown_as_available: true
+
+nested_delegation:
+  applies_to_assigned_execution_session_not_active_lead_dispatch: true
+  default_allowed: false
+  codex_worker_profile_default_allowed: true
+  web_worker_profile_default_allowed: false
+  task_or_lead_may_override_profile_default: true
+  authorization_required: task_or_lead_explicit
+  parent_session_remains_accountable: true
+  child_does_not_inherit_lead_authority: true
+  child_does_not_require_durable_task_identity_by_default: true
+  promote_to_formal_worker_validator_only_with_distinct_contract: true
+  child_review_does_not_count_as_independent_validation: true
+  cross_platform_nested_delegation: false
+  may_not_expand: [scope, permissions, forbidden_boundary, substantive_evidence_boundary, result_sink]
+  opt_in_conditions: [parent_remains_accountable, bounded_independently_understandable_subproblem, material_specialization_context_isolation_or_elapsed_time_benefit, explicit_write_or_resource_ownership, no_unsafe_shared_write_conflict, unchanged_scope_permission_forbidden_boundary_and_result_sink]
+  forbidden_patterns: [convenience_only_recursion, speculative_fan_out, purposeless_duplicate_execution, uncontrolled_recursive_agent_tree]
+
+independent_validation:
+  prefer_separate_formal_task_when_lead_has_partitioned_validator_work: true
+  executor_self_check_is_not_independent_review: true
+  substantively_independent_validator_required: true
+  fresh_conversation_not_required_without_contract_requirement: true
+  allowed_isolation_modes: [exact_resource, frozen_bundle, bounded_context, native_isolated_context]
+  ambient_control_context_is_not_substantive_evidence: true
+  economy_profile_may_not_waive_independence: true
+
+ordinary_task_evidence:
+  required: [task_ref, assigned_executor, dispatch_route, result_ref, scope_and_acceptance_evidence]
+  execution_economy_profile_may_be_recorded_when_material: true
+  material_dispatch_decision_fields: [profile, native_dispatch_available, work_suitable_for_native_delegate, selected_route, bypass_reason]
+  delegated_observation_fields: [wait_mode, unsolicited_progress_requests, substantive_intermediate_reads, interventions, result_read_after_terminal]
+  execution_economy_profile_record_required: false
+  runtime_capability_snapshot_ref_required: false
+  internal_model_chain_required: false
+
+special_model_identity_mode:
+  enabled_only_for: [model_qualification, model_benchmark, exact_runtime_identity_experiment]
+  ordinary_dispatch_policy_must_not_inherit: true

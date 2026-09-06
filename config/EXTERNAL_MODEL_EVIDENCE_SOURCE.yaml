@@ -1,0 +1,59 @@
+{
+  "initial_anchor": {
+    "categories_blob_sha": "50b5672fe14023f5ba14efc1ce16e221e6573056",
+    "categories_path": "public/categories_2026_06_25.json",
+    "source_commit": "a046342ce72c53eb15c798f80927c65d7a1abd5d",
+    "source_release": "2026-06-25",
+    "table_blob_sha": "6600f2fbe1fec9ef1f5a13df9ab0f51cf41201de",
+    "table_path": "public/table_2026_06_25.csv"
+  },
+  "model_mappings": {
+    "gemini-3.7-flash": {
+      "model_identity_match": "compatible_prior",
+      "source_model_label": "gemini-3.7-flash-high"
+    },
+    "gpt-5.6-luna": {
+      "model_identity_match": "compatible_prior",
+      "source_model_label": "gpt-5.6-luna-max"
+    },
+    "gpt-5.6-sol": {
+      "model_identity_match": "compatible_prior",
+      "source_model_label": "gpt-5.6-sol-max"
+    },
+    "gpt-5.6-terra": {
+      "model_identity_match": "compatible_prior",
+      "source_model_label": "gpt-5.6-terra-max"
+    }
+  },
+  "policy": {
+    "accepted_metric_granularity": "source_native_task_score",
+    "cross_site_composite_score": false,
+    "deterministic_ordering": true,
+    "infer_model_mapping_from_name": false,
+    "missing_required_mapped_source_row": "fail_without_candidate",
+    "source_schema_or_format_drift": "fail_closed_no_candidate",
+    "unknown_external_models": "ignore"
+  },
+  "representative_benchmarks": {
+    "Agentic Coding": "python",
+    "Coding": "code_generation",
+    "Data Analysis": "tablejoin",
+    "IF": "summarize",
+    "Language": "connections",
+    "Mathematics": "math_comp",
+    "Reasoning": "theory_of_mind"
+  },
+  "schema_version": "0.1",
+  "source": {
+    "branch_for_future_refresh": "main",
+    "categories_pattern": "^categories_(\\d{4}_\\d{2}_\\d{2})\\.json$",
+    "cost_file_used": false,
+    "execute_source_content": false,
+    "public_directory": "public",
+    "repository": "LiveBench/new-livebench",
+    "source_data_is_untrusted": true,
+    "source_id": "livebench_official_github",
+    "table_pattern": "^table_(\\d{4}_\\d{2}_\\d{2})\\.csv$"
+  },
+  "status": "accepted_source_contract"
+}

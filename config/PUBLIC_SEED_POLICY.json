@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "source_authority": "accepted_private_main",
+  "history": {
+    "inherit_private_git_history": false,
+    "future_public_history": "fresh_root_required"
+  },
+  "exclude": {
+    "prefixes": [
+      ".agent/",
+      ".publicization/"
+    ],
+    "exact": [
+      "CHANGELOG.md"
+    ]
+  },
+  "regenerate_after_public_identity": [
+    ".agent/BOOTSTRAP.md",
+    ".agent/PROJECT_STATE.md",
+    "CHANGELOG.md"
+  ],
+  "required_retained_paths": [
+    "README.md",
+    "VERSION",
+    "GOVERNANCE_RELEASE.yaml",
+    "config/DISPATCH_POLICY.yaml",
+    "config/MODEL_ROUTING.yaml",
+    "templates/STARTUP_CARD_RENDER.py",
+    "tests/test_governance_conformance.py",
+    "modules/local-resource-lifecycle/VERSION",
+    "modules/local-resource-lifecycle/docs/LPRL_SPEC.md"
+  ],
+  "qualification": {
+    "private_denylist_path": ".publicization/PRIVATE_SEED_DENYLIST.txt",
+    "scan_private_literals": true,
+    "scan_strong_secrets": true,
+    "scan_user_home_absolute_paths": true
+  },
+  "publication_authority": {
+    "qualifies_content_only": true,
+    "authorizes_publication": false,
+    "decides_namespace": false,
+    "decides_license": false,
+    "decides_first_public_version": false,
+    "decides_console_first_tag_inclusion": false
+  }
+}

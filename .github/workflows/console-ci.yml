@@ -1,0 +1,53 @@
+name: Console CI
+
+on:
+  pull_request:
+    paths:
+      - "console/**"
+      - ".github/workflows/console-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: console-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  console-ci:
+    name: console-ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: python -m pip install -e 'console/backend[dev]'
+      - name: Compile backend
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m compileall -q console/backend/governance_console console/backend/tests
+      - name: Test backend
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python -m pytest -q console/backend/tests
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: console/frontend/package-lock.json
+      - name: Install frontend dependencies from lockfile
+        run: npm ci --prefix console/frontend
+      - name: Typecheck frontend
+        run: npm --prefix console/frontend run typecheck
+      - name: Build frontend
+        run: npm --prefix console/frontend run build
+      - name: Assert tracked worktree remains clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -z "$(git status --porcelain --untracked-files=all)"

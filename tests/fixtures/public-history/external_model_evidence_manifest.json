@@ -1,0 +1,39 @@
+{
+  "accepted_candidate": {
+    "blob_sizes": {
+      "config/DISPATCH_POLICY.yaml": 17555,
+      "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": 7256,
+      "templates/RESULT.md": 4759
+    },
+    "diff_name_status": "A\t.github/workflows/external-model-evidence.yml\nM\tGOVERNANCE_RELEASE.yaml\nM\tVERSION\nM\tconfig/CONFORMANCE_POLICY.yaml\nA\tconfig/EXTERNAL_MODEL_EVIDENCE.yaml\nA\tconfig/EXTERNAL_MODEL_EVIDENCE_SOURCE.yaml\nM\tconfig/MODEL_ROUTING.yaml\nA\tdocs/model-governance/EXTERNAL_MODEL_EVIDENCE.md\nA\ttemplates/EXTERNAL_MODEL_EVIDENCE_UPDATE.py\nA\ttests/test_external_model_evidence.py",
+    "source_commit": "172314103fe8d2eb5bc61802e1c4f71db81599a2"
+  },
+  "accepted_release": {
+    "blobs": {
+      "config/DISPATCH_POLICY.yaml": "f10dda3c20eea7f0546ffddd2b08a01bfe08c7b8",
+      "config/MODEL_REGISTRY.yaml": "54403bf21b474121d9f0e25f4ec6bec9e7feb5cd",
+      "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": "04c2dfc2c3a40f5a10a6edae94a861fb9c5eba5b",
+      "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md": "e52bbea814252699ac11fbb108e3db0822c08ff7",
+      "docs/task-package/TASK_PACKAGE_SPEC.md": "3738542c0e45ea5dcbfd358317aae9c4140a75e6",
+      "templates/GOVERNANCE_CONFORMANCE_CHECK.py": "b0d1fd63bfa9bb76998ac82d2fd46f7e92bdd7e8",
+      "templates/RESULT.md": "bf2577e5184e8881878b7ae6b6c8e299d5ba69cc",
+      "tests/test_governance_conformance.py": "f04a6437ba2a913cf087b61db018035699be8ea7"
+    },
+    "source_commit": "7f0b0158092aa39c53540e6ff87dbabb1c9fc6af"
+  },
+  "baseline": {
+    "blobs": {
+      "config/DISPATCH_POLICY.yaml": "f10dda3c20eea7f0546ffddd2b08a01bfe08c7b8",
+      "config/MODEL_REGISTRY.yaml": "54403bf21b474121d9f0e25f4ec6bec9e7feb5cd",
+      "docs/acceptance/LEAD_CONTROLLER_ACCEPTANCE_PROTOCOL.md": "04c2dfc2c3a40f5a10a6edae94a861fb9c5eba5b",
+      "docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md": "e52bbea814252699ac11fbb108e3db0822c08ff7",
+      "docs/task-package/TASK_PACKAGE_SPEC.md": "3738542c0e45ea5dcbfd358317aae9c4140a75e6",
+      "templates/GOVERNANCE_CONFORMANCE_CHECK.py": "b0d1fd63bfa9bb76998ac82d2fd46f7e92bdd7e8",
+      "templates/RESULT.md": "bf2577e5184e8881878b7ae6b6c8e299d5ba69cc",
+      "tests/test_governance_conformance.py": "f04a6437ba2a913cf087b61db018035699be8ea7"
+    },
+    "source_commit": "e49eb7c878bf2a91674b12781a2185264411848b"
+  },
+  "purpose": "retained_external_evidence_history_identity_without_private_git_ancestry",
+  "schema_version": "1.0"
+}

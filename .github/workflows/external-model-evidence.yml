@@ -1,0 +1,177 @@
+name: External model evidence
+
+on:
+  pull_request:
+    paths:
+      - "config/EXTERNAL_MODEL_EVIDENCE_SOURCE.yaml"
+      - "config/EXTERNAL_MODEL_EVIDENCE.yaml"
+      - "config/MODEL_ROUTING.yaml"
+      - "config/CONFORMANCE_POLICY.yaml"
+      - "docs/model-governance/EXTERNAL_MODEL_EVIDENCE.md"
+      - "templates/EXTERNAL_MODEL_EVIDENCE_UPDATE.py"
+      - "tests/test_external_model_evidence.py"
+      - ".github/workflows/external-model-evidence.yml"
+      - "VERSION"
+      - "GOVERNANCE_RELEASE.yaml"
+      - "CHANGELOG.md"
+  schedule:
+    - cron: "17 6 1 * *"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Run repository tests
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: "true"
+        run: python -m unittest discover -s tests -p 'test*.py'
+      - name: Run exact-candidate central conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          commit="$(git rev-parse HEAD)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          cat > /tmp/governance-conformance-input.yaml <<EOF
+          schema_version: "0.2"
+          mode: central_governance
+          expected_identity:
+            commit: ${commit}
+            tree: ${tree}
+          EOF
+          python templates/GOVERNANCE_CONFORMANCE_CHECK.py \
+            --root "$PWD" \
+            --policy config/CONFORMANCE_POLICY.yaml \
+            --input /tmp/governance-conformance-input.yaml
+      - name: Public-source exact-provenance smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          readarray -t provenance < <(python - <<'PY'
+          import json
+          data = json.load(open("config/EXTERNAL_MODEL_EVIDENCE.yaml", encoding="utf-8"))
+          print(data["provenance"]["source_release"])
+          print(data["provenance"]["source_commit"])
+          PY
+          )
+          python templates/EXTERNAL_MODEL_EVIDENCE_UPDATE.py \
+            --mode check \
+            --release "${provenance[0]}" \
+            --source-commit "${provenance[1]}"
+
+  refresh:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Refuse to mutate an existing update candidate
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(gh pr list --state open --limit 100 --json body \
+            --jq '[.[] | select((.body // "") | contains("[MODEL-EXTERNAL-EVIDENCE-UPDATE-v1]"))] | length')"
+          if [ "$count" != "0" ]; then
+            echo "Existing external-evidence update PR is pending; no candidate mutation."
+            echo "blocked_by_open_pr=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "blocked_by_open_pr=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check latest public evidence
+        if: steps.guard.outputs.blocked_by_open_pr == 'false'
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          python templates/EXTERNAL_MODEL_EVIDENCE_UPDATE.py \
+            --mode check \
+            --metadata-file /tmp/external-model-evidence-meta.json
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif [ "$code" -eq 10 ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            exit "$code"
+          fi
+      - name: Generate deterministic candidate
+        if: steps.guard.outputs.blocked_by_open_pr == 'false' && steps.check.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          readarray -t pinned < <(python - <<'PY'
+          import json
+          data = json.load(open("/tmp/external-model-evidence-meta.json", encoding="utf-8"))
+          print(data["source_release"])
+          print(data["source_commit"])
+          PY
+          )
+          python templates/EXTERNAL_MODEL_EVIDENCE_UPDATE.py \
+            --mode write \
+            --release "${pinned[0]}" \
+            --source-commit "${pinned[1]}" \
+            --metadata-file /tmp/external-model-evidence-meta.json
+      - name: Create normal update PR
+        if: steps.guard.outputs.blocked_by_open_pr == 'false' && steps.check.outputs.changed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          readarray -t meta < <(python - <<'PY'
+          import json
+          data = json.load(open("/tmp/external-model-evidence-meta.json", encoding="utf-8"))
+          print(data["source_release"])
+          print(data["table_blob_sha"][:12])
+          PY
+          )
+          branch="automation/external-model-evidence-${meta[0]}-${meta[1]}"
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "Automation branch already exists; refusing to overwrite it."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add config/EXTERNAL_MODEL_EVIDENCE.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m "chore(model-governance): refresh external evidence ${meta[0]}"
+          git push origin "$branch"
+          cat > /tmp/external-model-evidence-pr.md <<EOF
+          [MODEL-EXTERNAL-EVIDENCE-UPDATE-v1]
+
+          Source: LiveBench/new-livebench
+          Release: ${meta[0]}
+          Table blob: ${meta[1]}
+
+          This PR updates only derived accepted external benchmark evidence. It does not auto-qualify models, edit the model registry, change production routing authority, or auto-merge.
+          EOF
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "[MODEL-GOV] Refresh accepted external model evidence (${meta[0]})" \
+            --body-file /tmp/external-model-evidence-pr.md

@@ -1,0 +1,55 @@
+schema_version: "0.2.4-pilot"
+manifest_id: "state-data-000"
+manifest_digest: null # lprl-cjson-v1 / state_data_manifest; excludes this field only
+resource_id: null
+resource_type: state # state|data
+status: UNKNOWN # VERIFIED|ACTIVE|INACTIVE|BLOCKED|UNKNOWN
+protection_status: PROTECTED
+
+owner_or_custodian: null
+unique_copy_status: UNKNOWN # VERIFIED_REDUNDANT|UNIQUE_PROTECTED|NOT_APPLICABLE|UNKNOWN
+reconstructable: null
+active_consumers: []
+bindings: []
+physical_location_refs: []
+
+versioning:
+  schema_version: null
+  data_version: null
+  format_version: null
+
+recovery:
+  backup_required: null
+  backup_ref: null
+  backup_verified: false
+  recovery_procedure_ref: null
+  recovery_test_ref: null
+
+retention:
+  retention_class: null
+  retention_until: null
+  audit_hold: false
+  hold_reason: null
+
+migration:
+  migration_status: null
+  migration_ref: null
+  previous_version_ref: null
+
+rollback:
+  compatibility_status: UNKNOWN # PASS|NOT_APPLICABLE|BLOCKED|UNKNOWN
+  compatibility_matrix_ref: null
+  rollback_window: null
+  blockers: []
+
+retirement:
+  allowed_by_policy: false
+  policy_conditions: []
+  decision_authority: accepted_gate_bundle
+
+last_verified: null
+notes: null
+
+# STATE_DATA_GATE_PASS enumerates the required facts. UNKNOWN unique-copy or
+# rollback state, incomplete recovery evidence where required, or a protected
+# exact target without later explicit action authorization must BLOCK Gate PASS.
