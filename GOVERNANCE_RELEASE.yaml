@@ -1,8 +1,8 @@
 schema_version: "1.0"
 
 ordinary_governance:
-  version: "0.3.25"
-  change_class: fail_closed_model_routing_decision_before_formal_launch
+  version: "0.3.27"
+  change_class: governance_consistency_hardening
   authority_model: accepted_main_plus_VERSION
   compatibility_contract_path: GOVERNANCE_RELEASE.yaml
 
@@ -30,6 +30,7 @@ adoption:
   core_is_disableable_feature_bundle: false
   ordinary_optional_choices:
     - governance_update_discovery
+    - adopter_local_model_bindings
     - project_local_model_calibration
     - anonymized_upstream_model_feedback_permission
     - lprl
@@ -47,6 +48,27 @@ project_policy_layering:
   local_policy_may_weaken_central_invariants: false
   task_may_satisfy_explicit_local_authorization_gates: true
   task_may_silently_override_local_policy: false
+
+adopter_local_model_bindings:
+  policy_path: templates/LOCAL_POLICY.yaml:model_bindings
+  placement_owner: config/DISPATCH_POLICY.yaml
+  model_routing_owner: config/MODEL_ROUTING.yaml
+  central_catalog_path: config/MODEL_REGISTRY.yaml
+  supported_surfaces: [web, agent]
+  selection_happens_after_surface_resolution: true
+  surface_pool_is_placement_authority: false
+  central_registry_is_exhaustive_adopter_allowlist: false
+  custom_model_requires_explicit_surface_pool_membership: true
+  configured_nonempty_pool_bounds_final_selection: true
+  central_model_requires_duplicated_status_or_evidence: false
+  local_custom_model_gains_central_status_or_cross_project_evidence: false
+  default_model_and_role_preferences_are_exact_pins: false
+  exact_task_or_owner_model_override_may_pin_one_task: true
+  one_model_pool_requires_special_routing_mode: false
+  ai_recommendation_allowed: true
+  initial_or_material_persisted_change_requires_owner_confirmation: true
+  conversation_display_is_surface_or_model_authority: false
+  formal_launch_requires_explicit_surface_and_local_policy: true
 
 takeover_resume:
   takeover_only_effect: activate_reconcile_recommend_wait
@@ -71,6 +93,11 @@ execution_economy:
   capability_probe_outranks_profile_hint: true
   runtime_mode_is_capability_defined_not_client_brand_defined: true
   profile_names_are_compatibility_identifiers_not_brand_requirements: true
+  web_mode_requires_confirmed_github_repository_read_write: true
+  github_native_operations_are_not_agent_placement_triggers: true
+  remote_repository_ci_is_not_local_test_execution: true
+  external_owner_launch_is_provider_and_client_neutral: true
+  required_execution_surface_precedes_model_selection: true
   task_safety_model_local_runtime_and_independence_constraints_outrank_profile: true
   owner_relay_for_quota_only_when_direct_compliant: false
   precise_token_accounting_required: false
@@ -251,7 +278,7 @@ modules:
     version_path: modules/local-resource-lifecycle/VERSION
     version: "0.2.5-pilot"
     semantic_change: false
-    semantic_change_scope: none_in_ordinary_governance_0_3_25
+    semantic_change_scope: none_in_ordinary_governance_0_3_27
     semantic_change_digest_contract: unchanged_lprl_cjson_v1_projections
     ordinary_governance_upgrade_does_not_silently_repin_module: true
     first_adoption_default_enabled: false
@@ -271,6 +298,13 @@ privacy:
   optional_private_source_secret_remains_downstream_local: true
 
 notes:
+  - "Ordinary governance 0.3.27 is a consistency hardening release: it aligns adoption, execution-surface-before-model ordering, Web direct-first / native delegate-first behavior, provider-neutral external launch, and GitHub-native remote execution semantics without adding an authority surface."
+  - "Formal Worker/Validator launch validation now requires the already-resolved execution surface plus the project LOCAL_POLICY, so a configured surface model pool cannot be bypassed merely by omitting LOCAL_POLICY from the validation call; the renderer still does not choose placement or models."
+  - "EXECUTOR_COMPLIANCE is narrowed to special exact-model/reasoning compliance and no longer duplicates ordinary Task, dispatch, nested-delegation, lifecycle or validator-independence policy."
+  - "Ordinary governance 0.3.26 adds optional downstream-local Web/Agent model pools and soft defaults/role preferences in the existing LOCAL_POLICY; Dispatch remains the only execution-surface owner and model selection happens only after surface resolution."
+  - "The central MODEL_REGISTRY remains a recommended/validated catalog rather than an exhaustive adopter allowlist. Explicitly declared local custom models gain downstream eligibility only, with no central status, cross-project evidence, or automatic promotion."
+  - "The Startup Card renderer remains an offline validation/render gate: it validates explicit surface-pool membership but never infers surface from conversation text, never ranks models, and leaves the visible three-field/three-line card unchanged."
+  - "Model-pool defaults and role preferences are ranking hints only; one-model pools need no special route and only an explicit exact Task/Owner override may hard-pin one Task model. Initial or materially changed persisted bindings require Owner confirmation."
   - "Ordinary governance 0.3.25 requires one compact derived model-routing decision before standard Worker/independent-Validator Startup Card emission; missing or invalid evidence blocks launch without adding a new authority store."
   - "The launch gate consumes existing MODEL_REGISTRY/MODEL_ROUTING boundaries, explicitly accounts for a registered candidate challenger, and leaves the user-facing three-field/three-line Startup Card unchanged; it does not rank candidates, run calibration, or auto-qualify models."
   - "Ordinary governance 0.3.24 makes runtime profiles capability-defined rather than client-brand-defined while retaining the existing profile names as compatibility identifiers."

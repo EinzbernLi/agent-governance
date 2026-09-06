@@ -1,6 +1,6 @@
 # Dispatch Routing Protocol
 
-版本：0.3.16
+版本：0.3.17
 状态：Non-authoritative reference guide
 
 ## 1. Purpose
@@ -15,18 +15,15 @@ Model qualification remains owned by `config/MODEL_ROUTING.yaml`, Task scope by
 `AGENT_COORDINATION_PROTOCOL.md`, and final acceptance by the Acceptance
 Protocol. The detailed sections below are guidance over those owners.
 
-Current policy first resolves execution surface: local checkout/files/worktree/
-software/tests/artifacts default to Codex, while remote-only durable-fact,
-reconciliation and review work prefers Web. Explicit role, qualification,
-independence, safety, permission, proven capability and Task-specific needs still
-win. Placement is preference, never authority.
+Current policy first resolves the **required execution surface**. A Task that genuinely requires a target-machine checkout/file/worktree, local software/runtime, local test execution or local artifact materialization defaults to a proven local-capable Agent surface. GitHub-native Issue/PR/branch/commit/review work, durable-fact reconciliation, documentation/evidence review, and repository CI execution/evidence do **not** become Agent/local work merely because GitHub or tests are involved; when no non-substitutable local state is required, Web remains the preferred surface. Explicit role, qualification, independence, safety, permission, proven capability and Task-specific needs still win. Placement is preference, never authority.
 
 ```text
 Task / Safety / Role / Independence define WHAT IS REQUIRED
-Model Routing chooses WHO is qualified/suitable
-Runtime Capability Probe determines WHAT IS REACHABLE NOW
-Execution Economy chooses WHICH COMPLIANT EXECUTION SHAPE TO PREFER
-Dispatch Routing chooses HOW TO REACH IT
+Runtime Capability Probe establishes WHAT SURFACES/CAPABILITIES ARE REALLY AVAILABLE
+Dispatch Policy resolves the REQUIRED EXECUTION SURFACE
+Model Routing chooses WHO is qualified/suitable INSIDE THAT SURFACE
+Execution Economy orders remaining compliant execution shapes
+Dispatch Routing chooses HOW TO REACH the selected executor
 Lead Acceptance decides WHETHER THE RESULT IS ACCEPTED
 ```
 
@@ -70,6 +67,8 @@ runtime_capabilities:
   external_owner_activation: available|unavailable|unknown
 ```
 
+对 GitHub-native 项目，Web mode 在接入/使用时应先确认目标 GitHub repository 所需的 read/write capability；不记录插件或 provider brand 作为长期 capability state。确认后，普通 GitHub-native 操作不需要逐 Task 重新证明“为什么不是 Agent”。若工具、权限或连接发生变化，再按 re-probe 条件重新判断。
+
 ### Evidence priority
 
 优先使用：
@@ -85,7 +84,7 @@ Capability Snapshot 默认是**会话级临时状态**，不是新的长期事�
 
 ## 4. Execution Economy
 
-Execution Economy 在 Model Routing 和 Runtime Capability Probe 已经排除不合规选项后，决定剩余选择中更偏向：
+Execution Economy 在 required execution surface、Model Routing 和 Runtime Capability Probe 已经排除不合规选项后，决定剩余选择中更偏向：
 
 ```text
 lead_direct_preferred
@@ -114,10 +113,11 @@ balanced
 
 ```text
 Web Sol (Lead)
-├─ architecture / Task design                 -> current session
-├─ GitHub metadata / docs / bounded core edit -> current session when compliant
-├─ local-only test requiring unavailable FS   -> dispatch
-└─ independent validation                     -> distinct formal Validator
+├─ architecture / Task design                    -> current session
+├─ GitHub Issue/PR/branch/commit/docs core edit -> current session when compliant
+├─ repository CI trigger/readback               -> current session when compliant
+├─ local-only test requiring unavailable FS      -> dispatch to local-capable Agent
+└─ independent validation                        -> distinct formal Validator
 ```
 
 不得仅仅为了减少 Lead 工作量或 quota，就要求 Owner 额外打开 external Worker；如果 Lead-direct 已合规，`external_owner_launch` 不能只以“省额度”为理由发生。Task 或 Owner 显式要求不同 executor 的情况除外。
@@ -172,17 +172,19 @@ unknown_or_other         -> balanced
 
 ## 5. Routing Algorithm
 
-Lead 完成 Task decomposition、Model Routing、Capability Probe 和 Economy resolution 后，对每个正式 Task 独立解析。
+Lead 对每个候选 Task 先确定 Task requirements/scope 和当前 capability，再解析 required execution surface；随后 Model Routing 只在该 surface 的合规模型池/资格边界内选择 executor/model/reasoning；Task freeze 后才对 selected executor 解析 current/native/external delivery route。不要用 provider、价格、GitHub 操作类型或 remote CI 把已经解析的 surface 改掉。
 
 通用算法：
 
 ```text
-1. Apply Task/safety/model/local-runtime/independence constraints.
-2. Determine compliant route candidates from actual runtime capabilities.
-3. Resolve execution-economy profile.
-4. Order only the remaining compliant candidates by that profile.
-5. For a material decision, record capability availability, work suitability, selected route and any bounded bypass reason as separate evidence.
-6. Dispatch through the first compliant route; otherwise DISPATCH_BLOCKED.
+1. Apply Task/safety/role/local-runtime/independence constraints and current capability facts.
+2. Resolve required execution surface (Web or local-capable Agent); GitHub-native/remote-CI work alone is not a local trigger.
+3. Run Model Routing inside that surface; apply surface pool, qualification, calibration and exact Task/Owner overrides.
+4. Freeze the Task/launch decision when a distinct executor or role is required.
+5. Determine compliant delivery-route candidates from actual runtime capabilities.
+6. Resolve execution-economy profile and order only those remaining compliant routes.
+7. For a material decision, record capability availability, work suitability, selected route and any bounded bypass reason as separate evidence.
+8. Dispatch through the first compliant route; otherwise DISPATCH_BLOCKED.
 ```
 
 Profile 的 route preference：
@@ -198,7 +200,7 @@ balanced:
   current_session -> native_dispatch -> external_owner_launch -> blocked
 ```
 
-这里的顺序只对**仍然合规且可达**的 route 生效。例如 Task 已明确分配给 distinct Validator 时，Lead `current_session` 根本不是 candidate；本地软件要求超出 Web capability 时，Web `current_session` 也不是 candidate。
+这里的顺序只对**仍然合规且可达**的 route 生效。例如 Task 已明确分配给 distinct Validator 时，Lead `current_session` 根本不是 candidate；真正的本地软件/文件/本机测试要求超出 Web capability 时，Web `current_session` 也不是 candidate；仅仅要改 GitHub 或让 GitHub Actions 跑测试则不是后一种情况。
 
 ### Current session
 
@@ -220,9 +222,9 @@ Lead native dispatch 属于 **Lead orchestration**，不是 Worker/Validator 的
 
 ### External Owner launch
 
-当 distinct external Agent 确实是合规要求，或更优本地/native route 不可用/被 Task 或 Owner 显式绕过时，才进入 external Owner activation。
+当 distinct compliant external execution session 确实是合规要求，或更优 current/native route 不可用/被 Task 或 Owner 显式绕过时，才进入 external Owner activation。External route 本身不等于 Agent；具体 Web 或 local-capable Agent placement 仍由 required surface、capability 和 Task contract 决定。
 
-Owner 只负责连接或打开指定平台/模型/reasoning，并发送薄启动指针。Owner 不复制 Task 正文、不搬运 Result、不人工解释 Agent 技术上下文。
+Owner 只负责连接或打开指定平台/模型/reasoning，并发送薄启动指针。Owner 不复制 Task 正文、不搬运 Result、不人工解释执行端技术上下文。
 
 `lead_direct_preferred` 下，如果 current-session 已合规，不得仅为了 quota-saving 强制 Owner relay。
 
@@ -282,10 +284,7 @@ Worker merges sibling Task on its own
 Lead dispatching assigned Tasks != assigned Worker spawning additional children
 ```
 
-Codex Worker 在 native capability 已证明时默认可选用 qualified child；Web/
-generic Worker 默认 false。Task/Lead 可显式收紧或覆盖。Quota preservation、
-specialization、context isolation 和 elapsed time 都可构成 material benefit，
-但不能绕过 qualification、safety 或 parent accountability。
+Nested-delegation defaults come only from `config/DISPATCH_POLICY.yaml`. Codex Worker 在 native capability 已证明时默认可选用 qualified child；Web/generic Worker 默认 false。Task/Lead 可显式收紧或覆盖。Quota preservation、specialization、context isolation 和 elapsed time 都可构成 material benefit，但不能绕过 qualification、safety 或 parent accountability。
 
 Child subproblem 必须 bounded 且 independently understandable；write/resource
 ownership 明确，parallel writes 两两 disjoint，overlap serializes/fails；scope、
@@ -375,8 +374,9 @@ Profile 变化本身不能制造 capability；如果 profile 切到 `native_dele
 
 ```text
 Task ref 是什么？
+required execution surface 是什么？
 分配给谁？
-走 current/native/external 哪条 route？
+走 current/native/external 哪条 delivery route？
 若 economy profile 对 route 选择具有实质影响，使用了哪个 profile？
 若 parallel_safe，workstream/baseline 是什么，是否发生 conflict/drift？
 Result 在哪里？
@@ -396,12 +396,17 @@ write_overlap => serialise_or_replan
 probe_before_route
 channel_name != runtime_capability
 channel_name != model_qualification
+required_execution_surface_before_model_selection
+model_selection_inside_resolved_surface
+github_native_operation_alone != agent_placement_trigger
+remote_repository_ci != local_test_execution
+external_owner_launch != agent_by_definition
 model_routing != execution_economy != dispatch_routing
 execution_economy_only_orders_compliant_choices
 capability_probe > runtime_hint
 Task/safety/model/local-runtime/independence > economy_profile
-lead_direct_preferred => no_owner_relay_for_quota_only_when_direct_compliant
-native_delegate_preferred => native_only_when_proven_reachable_and_qualified
+lead_direct_preferred => current_session_first_when_compliant
+native_delegate_preferred => native_dispatch_first_when_proven_reachable_and_qualified
 lead_native_dispatch != worker_nested_delegation
 owner_activation_relay != owner_content_relay
 one_formal_task_one_assigned_session_by_default

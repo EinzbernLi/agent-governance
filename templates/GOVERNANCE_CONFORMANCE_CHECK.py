@@ -112,7 +112,6 @@ REMOTE_ONLY_WORK = {
 }
 PLACEMENT_HIGHER_PRECEDENCE = {
     "explicit_task_executor_or_role_requirement",
-    "model_qualification_and_material_suitability",
     "independent_validation_or_evidence_isolation",
     "safety_permission_and_forbidden_boundaries",
     "proven_runtime_capability",

@@ -1,6 +1,6 @@
 # Agent Coordination Protocol
 
-版本：0.3.16
+版本：0.3.17
 状态：Accepted role and coordination owner
 
 ## 1. Core Roles
@@ -28,11 +28,12 @@ Active Lead
 -> if Lead Claim is enabled: write next parent-bound claim -> reread sink and verify uniqueness
 -> fresh Runtime Capability Probe (once per Lead session, then cache)
 -> complete applicable Lead activation -> ACTIVE
--> decompose work
+-> decompose work and define Task requirements/scope
 -> classify each Task as serial or parallel_safe
--> choose Worker/Validator + reasoning
--> write GitHub Task Packages
--> route each ready Task:
+-> resolve required execution surface from Task requirements + actual capability
+-> run Model Routing inside that resolved surface; choose Worker/Validator + model/reasoning
+-> freeze/write GitHub Task Package when delegation/distinct role requires one
+-> resolve delivery route for each ready Task:
      current_session
      native_dispatch
      external_owner_launch
@@ -45,6 +46,8 @@ Active Lead
 -> Lead reviews / rework / integrates
 -> Lead final acceptance
 ```
+
+Required execution surface and delivery route are different decisions. Surface resolution happens before model selection; `current_session/native_dispatch/external_owner_launch` is resolved only after the selected executor is known. A model/provider/economy preference cannot move a Task between Web and Agent surfaces.
 
 Canonical Dispatch rules:
 
@@ -63,6 +66,8 @@ Owner may relay external activation but not Task/Result content.
 
 Runtime capability/profile precedence is owned by Dispatch Policy. Coordination
 must never infer capability or authority from a Web/Codex/Desktop label.
+
+For GitHub-native governance, Web mode is used only after the target Web surface has confirmed repository access. Once that prerequisite is satisfied, ordinary GitHub Issue/PR/branch/commit/review and remote-CI work is normal Web-capable work and is not, by itself, a reason to reclassify the Task as Agent/local. Actual permission/connection loss still fails closed under the capability probe.
 
 ## 5. Same-Project Parallel Workstreams
 
@@ -99,7 +104,9 @@ Parallel workstream 不是 distributed lock、Agent Bus、第二套 Task store �
 
 ## 6. Nested Delegation
 
-Runtime-profile default：
+Nested-delegation defaults are owned only by `config/DISPATCH_POLICY.yaml`; this coordination surface does not define a second generic opt-in rule.
+
+Current runtime-profile behavior is:
 
 ```yaml
 codex_worker: true_when_native_capability_proven
@@ -194,7 +201,7 @@ Dispatch 失败：
 
 ```text
 native unavailable
--> external Owner launch available? use it
+-> current/external compliant route available? use it
 -> otherwise BLOCKED
 ```
 
@@ -217,18 +224,19 @@ executor runtime/UI reports done
 每个正式 Task 应能回答：
 
 1. Task 为什么存在、scope/acceptance 是什么？
-2. Lead 分配给哪个 role/model/reasoning？
-3. 实际 route 是 native 还是 external？
-4. Result ref/commit/artifact 是什么？
-5. tests/validation 做了什么？
-6. 是否越过 scope/permission/evidence boundary？
-7. Validator 是否独立？
-8. 若并行执行，为什么 `parallel_safe`，sibling Task 是哪些？
-9. 是否出现 write-scope overlap、dependency/baseline drift？
-10. durable Result 是否已写入并 read-back，预期 remote mutation 是否与 Result 对账？
-11. Lead 为什么 PASS/REWORK/REJECT/BLOCKED？
-12. durable re-anchor/activation 是否完成并有可观察 evidence；若未完成，旧 generation 是否仍保持权威？
-13. pre-anchor diagnostic 是否明确为 provisional，且 reuse/rerun 是否按 exact input/baseline/test contract 对账？
+2. required execution surface 是什么，为什么？
+3. Lead 在该 surface 内分配给哪个 role/model/reasoning？
+4. 实际 delivery route 是 current/native/external 哪一个？
+5. Result ref/commit/artifact 是什么？
+6. tests/validation 做了什么？
+7. 是否越过 scope/permission/evidence boundary？
+8. Validator 是否独立？
+9. 若并行执行，为什么 `parallel_safe`，sibling Task 是哪些？
+10. 是否出现 write-scope overlap、dependency/baseline drift？
+11. durable Result 是否已写入并 read-back，预期 remote mutation 是否与 Result 对账？
+12. Lead 为什么 PASS/REWORK/REJECT/BLOCKED？
+13. durable re-anchor/activation 是否完成并有可观察 evidence；若未完成，旧 generation 是否仍保持权威？
+14. pre-anchor diagnostic 是否明确为 provisional，且 reuse/rerun 是否按 exact input/baseline/test contract 对账？
 
 普通任务不要求回答内部每一级 child exact model identity。Worker/Validator 的 normal execution difficulty、failed first attempt、search 或 command adaptation 不是 blocker；只有缺少必要 authority/permission/fact/decision/capability 且没有安全的 in-scope alternative 才能 `BLOCKED` / `NEEDS_ATTENTION`。
 
@@ -238,10 +246,10 @@ executor runtime/UI reports done
 
 ```text
 Owner starts/uses Active Lead
-Lead handles decomposition + GitHub Tasks
-Lead marks independent Tasks parallel_safe where justified
-Lead natively dispatches what it can
-Owner only launches genuinely unreachable external sessions
+Lead handles decomposition + GitHub Tasks when a distinct executor/role is actually needed
+Web/non-native Lead executes bounded compliant work directly by default
+native-subagent-capable Lead delegates suitable bounded work natively by default
+Owner only launches genuinely required external sessions
 Executors write GitHub Results
 Lead verifies durable handoff
 Lead integrates and accepts

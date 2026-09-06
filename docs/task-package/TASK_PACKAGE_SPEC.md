@@ -1,6 +1,6 @@
 # Task Package Specification
 
-版本：0.3.18
+版本：0.3.19
 状态：Accepted
 
 ## 1. Authority Boundaries
@@ -85,10 +85,8 @@ dispatch:
   internal_delegation_allowed: runtime_profile_default
 
 nested_delegation:
-  default_allowed: false
-  opt_in_only: true
-  authorization: task_or_lead_explicit
-  parent_remains_accountable: true
+  policy_owner: config/DISPATCH_POLICY.yaml
+  task_override: null
 
 parallelism:
   mode: serial # serial|parallel_safe
@@ -107,7 +105,7 @@ transport:
 
 `model_routing_decision` 是由 `config/MODEL_ROUTING.yaml` 已解析结果形成的**派生启动证据**，不是第五个 authority，也不是第二个 routing state。对于标准 Worker / independent Validator 启动，它必须在 Startup Card 发出前存在并通过 fail-closed gate。`challenger_model` / `challenger_evidence_strength` 只在 `selected|deferred` 时使用；`challenger_defer_reason` 只在 `deferred` 时使用，并且必须来自现有 `challenger_exploration.deferral_reasons`。该 block 记录已完成的 routing 结论，不重新计算 candidate 排名、calibration、PEH 或 Execution Economy。
 
-对于标准 Worker / independent Validator，Lead 在把 Task draft 写成 durable `FROZEN` comment 前，必须先用 canonical `templates/STARTUP_CARD_RENDER.py::validate_model_routing_decision` 对已解析的 `executor.model`、`executor.reasoning` 与 `model_routing_decision` 执行同一 fail-closed 校验；未通过则不得发布。这个 pre-freeze reuse 只复用 Model Routing gate，不验证或吸收 Task Package、Dispatch、placement、runtime/client 语义，也不新增 authority。
+对于标准 Worker / independent Validator，Lead 在把 Task draft 写成 durable `FROZEN` comment 前，必须先完成 Task requirements/capability 解析并由 `config/DISPATCH_POLICY.yaml` 得到**已经解析的 execution surface**，再在该 surface 内完成 Model Routing。随后使用 canonical `templates/STARTUP_CARD_RENDER.py::validate_model_routing_decision`，同时提供已解析的 `execution_surface`、项目 `LOCAL_POLICY`、`executor.model`、`executor.reasoning` 与 `model_routing_decision` 执行同一 fail-closed 校验；缺少 surface 或项目 LOCAL_POLICY 时不得发布正式 Worker/Validator Task。这个 pre-freeze reuse 只复用 Model Routing gate，不重新选择 surface/model，不吸收 Task Package、Dispatch、placement、runtime/client 语义，也不新增 authority。
 
 此外必须有 objective、deliverables、background、scope、non-goals、allowed/forbidden evidence/files、file/resource ownership、required facts/evidence refs、dependencies、acceptance criteria、tests、constraints、blocking conditions、review requirement 和 result contract/result sink。
 
@@ -134,15 +132,27 @@ package_completeness:
 
 `parallelism` 只声明本 Task 是否允许与 sibling Task 同时执行；真正的写入边界仍由本 Task 已有的 scope / allowed / forbidden files 与 dependencies 定义，不复制第二份 file ownership。
 
-Task/Result transport 默认使用 `repository_ref`。只有正式事实源不可由执行端直接访问时才允许 `manual_content` 作为 degraded fallback；Owner 手动打开外部 Agent 属于 activation，不会把 repository-backed Task/Result 自动降级成手工内容搬运。
+Task/Result transport 默认使用 `repository_ref`。只有正式事实源不可由执行端直接访问时才允许 `manual_content` 作为 degraded fallback；Owner 手动打开外部 execution session 属于 activation，不会把 repository-backed Task/Result 自动降级成手工内容搬运。
 
 ## 3. Executor Assignment vs Dispatch
 
-Task 的 `executor` 表示 **谁应执行**。它由 Model Routing / project calibration / Task override 决定。
+Task 的 `executor` 表示 **谁应执行**。对于非 exact-override 情况，它只能在 Dispatch Policy 已经解析的 execution surface 内由 Model Routing / project calibration 选择；Task/Owner 的 exact executor/model override 仍按更高优先级规则解释，但不能通过模型供应商、价格、tier 或偏好反向改变 required execution surface。
 
-对于标准 Worker / independent Validator，`model_routing_decision` 必须忠实记录这个已经解析完成的选择：selected model 必须满足 registry/status/role/task/risk 边界；candidate 只能进入 shadow/qualification/evidence-acquisition；under-evidenced challenger 若未选择则必须记录一个现有 policy 接受的 bounded deferral reason。Startup Card gate 只验证这个 resolved decision 与最终 `模型 / 思考等级` 一致，不负责选模型或排序 challenger。
+标准顺序是：
 
-Task 不预先写死 Web/Codex 的启动方式。Route、runtime profile、capability
+```text
+Task requirements / scope / capability facts
+-> Dispatch Policy resolves required execution surface
+-> Model Routing selects model/reasoning inside that surface
+-> Task / launch decision is frozen
+-> Dispatch Policy resolves current_session | native_dispatch | external_owner_launch | blocked delivery route
+```
+
+Required execution surface 与 delivery route 是不同概念；`external_owner_launch` 也不等于 Agent。GitHub-native Issue/PR/branch/commit/review/remote-CI 工作本身不是 local/Agent placement trigger，真正需要目标机器本地文件、workspace、软件、local test/artifact 或其他不可由远程表面替代的状态时才属于 local requirement。
+
+对于标准 Worker / independent Validator，`model_routing_decision` 必须忠实记录这个已经解析完成的选择：selected model 必须满足 registry/status/role/task/risk 边界；candidate 只能进入 shadow/qualification/evidence-acquisition；under-evidenced challenger 若未选择则必须记录一个现有 policy 接受的 bounded deferral reason。Startup Card gate 只验证这个 resolved decision 与最终 `模型 / 思考等级`、显式 surface 和项目 LOCAL_POLICY 一致，不负责选 surface、选模型或排序 challenger。
+
+Task 不根据 Web/Codex 客户端名字猜启动方式。Route、runtime profile、capability
 precedence、delegated lifecycle 与 observation 由唯一 machine owner
 `config/DISPATCH_POLICY.yaml` 决定。Task/Result 只引用该决策并记录其要求的
 bounded evidence；平台名称本身不授予 capability 或 Lead 身份。
@@ -219,15 +229,15 @@ Capability Snapshot 默认是当前 Lead session 的临时状态，不写进每�
 ## 6. Native vs External
 
 Native/current/external/blocked are delivery routes owned by Dispatch Policy.
-They do not change this Task contract. Owner remains an Activation Relay rather
-than a Task/Result content relay.
+They do not change this Task contract. External is provider/client neutral and
+does not imply Agent placement. Owner remains an Activation Relay rather than a
+Task/Result content relay.
 
 ## 7. Nested Delegation
 
-`internal_delegation_allowed` follows Dispatch Policy: Codex Worker defaults to
-allowed when native capability is proven; Web/generic Worker defaults false.
-Task/Lead may explicitly tighten or override that preference without changing
-scope, permissions or formal role boundaries.
+Nested-delegation defaults、profile behavior、authorization/accountability、write ownership 与 recursion boundaries 只由 `config/DISPATCH_POLICY.yaml` 拥有；本 Task Package 不复制第二份默认策略。`dispatch.internal_delegation_allowed: runtime_profile_default` 表示遵循该 owner，`nested_delegation.task_override` 只在 Dispatch Policy 允许的范围内显式收紧或覆盖当前 Task。
+
+当前 Dispatch Policy 下，Codex Worker 在 native capability 已证明时默认可选用 qualified child；Web/generic Worker 默认 false。Task/Lead may explicitly tighten or override that preference without changing scope, permissions or formal role boundaries.
 
 若 Lead 已经拆出不同 qualified executor roles 的正式 Task，应分别派发这些 Task，而不是让 Worker 再重新做一遍正式模型路由。
 
@@ -264,7 +274,7 @@ Ambient Control Context（system/developer/AGENTS/WORKFLOW/tool/safety controls�
 
 普通 Preflight 不验证隐藏的内部 child model/reasoning identity。
 
-对于标准 Worker / independent Validator 的正式 launch，preflight 必须先得到有效 `model_routing_decision`；缺失、candidate production、provisional role/task/risk 越界、challenger disposition/defer reason 不合法，或 Startup Card 的 model/reasoning 与 decision 不一致时，launch gate 直接 `BLOCK`。这不新增 durable routing artifact：decision 可以内嵌于 frozen Task，仍由 Model Routing 语义解释。
+对于标准 Worker / independent Validator 的正式 launch，preflight 必须先得到有效 `model_routing_decision`，并把**已解析的 execution surface 与项目 LOCAL_POLICY**作为 mandatory validation input；缺失 surface、缺失/不可读 LOCAL_POLICY、缺少 `model_bindings`、candidate production、provisional role/task/risk 越界、surface pool 越界、challenger disposition/defer reason 不合法，或 Startup Card 的 model/reasoning 与 decision 不一致时，launch gate 直接 `BLOCK`。conversation display 不得补推 surface。这样项目已配置的 surface pool 不能通过调用端省略 LOCAL_POLICY 而被绕过。这不新增 durable routing artifact：decision 可以内嵌于 frozen Task，仍由 Model Routing 语义解释。
 
 对于 `parallel_safe` Task，Parallel-Safe Gate 属于普通 preflight 的一部分；正常 PASS 不要求单独生成新 artifact。
 
@@ -357,16 +367,22 @@ Worker handoff 只有在以下条件满足后才视为 durable-complete：
 - reusable local evidence does not grant candidate currency；
 - probe before route；
 - durable re-anchor + applicable activation before authority-bearing work；
+- required execution surface precedes model selection；
+- model selection stays inside the already-resolved surface；
 - model routing != dispatch routing；
-- standard Worker/Validator Task freeze requires the existing model-routing decision gate to pass; this reuse must not absorb Task/Dispatch/placement/runtime-client semantics；
+- standard Worker/Validator Task freeze requires the existing model-routing decision gate to pass with explicit execution surface + project LOCAL_POLICY; this reuse must not absorb or recompute Task/Dispatch/placement/runtime-client semantics；
 - standard Worker/Validator launch requires a valid `model_routing_decision` before Startup Card emission；
+- configured surface pool may not be bypassed by omitting project LOCAL_POLICY；
 - candidate production authority and unexplained challenger bypass fail closed at formal launch；
 - channel name != runtime capability；
+- GitHub-native operation alone != Agent placement trigger；
+- remote repository CI != local test execution；
 - GitHub-first Task/Result transport；
 - repository_ref preferred; manual content is degraded fallback only；
 - runtime/UI completion != durable Task completion；
 - durable Task contract > executor-local planning；
 - Owner does not relay Task/Result bodies；
+- nested-delegation defaults are owned only by Dispatch Policy；
 - Codex Worker child use is default-allowed but optional when proven capable; Web/generic default false；
 - independent evidence boundary remains hard；
 - only Lead Controller may integrate sibling work and finally accepted。
@@ -415,14 +431,7 @@ emit_only_after_gate_pass: true
 gate_failure_action: BLOCK
 ```
 
-The exact frozen Task revision, resolved model identity/route, native reasoning
-level and compact `model_routing_decision` must be resolved before they become
-gate inputs. The canonical renderer validates Task-ref/card structure plus the
-already-resolved decision against accepted model registry/routing boundaries. It
-**does not** rank candidates, read project calibration/PEH to choose a winner,
-select a challenger, choose a model/reasoning level, or override Task/Dispatch
-authority. Routing metadata is not printed into the user-facing card, so the
-three-field/one-block/three-line payload remains unchanged.
+The exact frozen Task revision, resolved model identity, native reasoning level, already-resolved execution surface, project LOCAL_POLICY and compact `model_routing_decision` must be available before they become gate inputs. The canonical renderer validates Task-ref/card structure plus the already-resolved decision against accepted model registry/routing boundaries and the configured surface pool. It **does not** infer surface from conversation text, rank candidates, read project calibration/PEH to choose a winner, select a challenger, choose a model/reasoning level, choose placement/delivery route, or override Task/Dispatch authority. Routing metadata is not printed into the user-facing card, so the three-field/one-block/three-line payload remains unchanged.
 
 The entire user-visible formal-launch response is the renderer stdout itself:
 no leading/trailing prose and no outer Markdown/code fence may wrap it. Any such

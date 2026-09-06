@@ -9,13 +9,17 @@ routing_policy:
   lead_controller_must_accept_final_result: true
   model_selection_is_independent_of_dispatch_route: true
   model_selection_is_independent_of_execution_economy: true
+  model_selection_happens_after_execution_surface_resolution: true
+  model_price_tier_provider_may_change_execution_surface: false
   execution_economy_may_not_override_model_qualification: true
   use_provider_native_reasoning_levels: true
   forbid_cross_provider_label_equivalence: true
 
   output_semantics:
     explicit_task_override_may_fix_exact_executor: true
+    explicit_owner_instruction_may_fix_exact_executor: true
     otherwise_produces_ranked_qualified_candidates: true
+    default_and_role_preferences_are_rank_only: true
     material_suitability_difference_outranks_execution_economy: true
     materially_equivalent_qualified_candidates_may_be_tiebroken_by_execution_economy: true
 
@@ -48,11 +52,42 @@ routing_policy:
       - challenger_defer_reason
     challenger_under_evidenced_bands_source: challenger_exploration.evidence_strength.under_evidenced_bands
     challenger_deferral_reasons_source: challenger_exploration.deferral_reasons
+    execution_surface_source: config/DISPATCH_POLICY.yaml
+    execution_surface_must_be_explicit_for_surface_pool_validation: true
+    conversation_display_may_infer_execution_surface: false
+    local_policy_model_bindings_source: .agent/LOCAL_POLICY.yaml:model_bindings
+    central_registry_is_exhaustive_adopter_allowlist: false
+    undeclared_noncentral_model_action: BLOCK
+    configured_surface_out_of_pool_action: BLOCK
+    local_custom_model_central_qualification_status: none
     candidate_production_authority_allowed: false
     provisional_production_must_remain_within_registry_ceiling: true
     selected_model_and_reasoning_must_match_startup_card: true
     ranking_or_model_selection_inside_startup_renderer_allowed: false
     missing_or_invalid_decision_action: BLOCK
+
+  adopter_local_model_bindings:
+    source: .agent/LOCAL_POLICY.yaml:model_bindings
+    placement_authority: config/DISPATCH_POLICY.yaml
+    selection_stage: after_execution_surface_resolution_before_calibration_ranking
+    supported_surfaces:
+      - web
+      - agent
+    surface_pool_is_selection_input_not_placement_authority: true
+    empty_allowed_models_means_no_adopter_pool_restriction_for_central_models: true
+    custom_model_requires_explicit_surface_pool_membership: true
+    nonempty_surface_pool_restricts_final_selection_to_members: true
+    central_registered_models_need_no_local_status_or_evidence_copy: true
+    local_custom_model_gains_central_status: false
+    local_custom_model_gains_cross_project_evidence: false
+    local_custom_model_auto_promotes_globally: false
+    default_model_is_preference_not_pin: true
+    role_preferences_are_preferences_not_pins: true
+    exact_task_or_owner_override_may_pin_exact_model: true
+    one_model_pool_requires_no_special_routing_mode: true
+    ai_may_recommend_initial_bindings: true
+    initial_or_material_persisted_change_requires_owner_confirmation: true
+    conversation_display_is_not_surface_or_model_authority: true
 
   evidence_sources:
     bootstrap_seed: config/BOOTSTRAP_ROUTING_SEED.yaml
@@ -122,6 +157,7 @@ routing_policy:
     internal_delegation_strategy_attribution_when_material: true
     project_local_prior_may_change_model_qualification_automatically: false
     project_local_prior_may_rank_already_qualified_candidates: true
+    project_local_prior_may_rank_owner_authorized_local_pool_candidates: true
     global_promotion_from_single_project: false
 
   private_cross_project_calibration:
@@ -277,6 +313,7 @@ roles:
       - "Current-session dispatch capability is resolved by Runtime Capability Probe, not here."
       - "Core implementation is not an intrinsic Lead duty; Lead implementation is allowed only when Dispatch Policy resolves current_session or a higher-precedence bounded exception applies."
       - "Unless a Task fixes an exact executor, Model Routing yields ranked qualified/suitable candidates; Execution Economy may only break ties among materially equivalent compliant candidates."
+      - "A configured adopter-local surface pool bounds selection only after Dispatch has resolved the surface; pool defaults and role preferences are ranking hints, never placement authority or exact-model pins."
       - "A usable project-local calibration cache may refine the ranking among already qualified candidates; it never becomes Task/Result/Acceptance authority and never auto-promotes central qualification."
       - "In a user-owned private governance fork, a valid Private Evidence Hub cross-project cache may refine ranking below project-local evidence and above governance/global priors; it never grants qualification or rewrites Core."
       - "Accepted external benchmark evidence is a lower-precedence prior only; it never grants qualification or production authority."
@@ -331,6 +368,12 @@ escalation:
 
 invariants:
   - "model_routing_qualifies_and_ranks_executor_candidates"
+  - "dispatch_surface_is_resolved_before_model_selection"
+  - "surface_model_pool_does_not_choose_execution_surface"
+  - "configured_surface_pool_bounds_final_model_selection"
+  - "local_custom_model_eligibility_is_not_central_qualification"
+  - "default_and_role_preferences_are_not_exact_model_pins"
+  - "conversation_display_is_not_surface_authority"
   - "project_local_calibration_is_derived_prior_not_authority"
   - "project_local_calibration_does_not_auto_change_global_qualification"
   - "project_local_calibration_requires_exactly_one_state_issue"

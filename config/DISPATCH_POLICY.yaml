@@ -26,6 +26,10 @@ principles:
   profile_names_are_compatibility_identifiers_not_brand_requirements: true
   web_interactive_means_non_native_delegating_runtime: true
   codex_native_subagents_means_native_subagent_capable_runtime: true
+  web_mode_requires_confirmed_github_repository_read_write: true
+  github_native_operations_are_not_agent_placement_triggers: true
+  remote_repository_ci_is_not_local_test_execution: true
+  external_owner_launch_is_provider_and_client_neutral: true
 
 lead_core_responsibilities:
   owner: config/DISPATCH_POLICY.yaml
@@ -79,7 +83,7 @@ runtime_placement_policy:
     preferred_surface: web
     policy: web_preferred
     representative_work: [github_durable_fact_read, remote_authority_reconciliation, governance_judgment, issue_or_pr_review_without_local_checkout, remote_documentation_or_evidence_review]
-  higher_precedence_constraints: [explicit_task_executor_or_role_requirement, model_qualification_and_material_suitability, independent_validation_or_evidence_isolation, safety_permission_and_forbidden_boundaries, proven_runtime_capability, task_specific_software_or_artifact_requirement]
+  higher_precedence_constraints: [explicit_task_executor_or_role_requirement, independent_validation_or_evidence_isolation, safety_permission_and_forbidden_boundaries, proven_runtime_capability, task_specific_software_or_artifact_requirement]
   placement_is_execution_preference_not_authority: true
   placement_may_change_task_scope_or_permissions: false
 
@@ -179,11 +183,11 @@ routing:
   route_candidates: [current_session, native_dispatch, external_owner_launch, blocked]
 
   current_session:
-    condition: current Lead session is an allowed qualified candidate for the bounded Task and all higher-precedence role/scope/capability/independence constraints permit it
+    condition: current Lead remains compliant after higher-precedence constraints
     owner_action_required: false
 
   native_dispatch:
-    condition: current Lead runtime has proven native reachability to a qualified candidate selected under the Task and suitability constraints
+    condition: proven native reachability to a qualified Task-compliant executor
     owner_action_required: false
     child_instruction: "执行 <task_ref>；先读取 Issue/指定 comment；作为该 Task 的执行者，不接管项目 Lead。"
     lead_orchestration_not_nested_delegation: true
@@ -191,7 +195,7 @@ routing:
     never_inferred_from_channel_label: true
 
   external_owner_launch:
-    condition: a distinct compliant external assigned Agent session is required or selected after higher-precedence constraints and preferred local/native routes are unavailable or explicitly bypassed
+    condition: distinct compliant external execution session remains after higher-precedence constraints and preferred routes
     requirements: [github_read, github_write_or_defined_result_sink, external_owner_activation]
     owner_action_required: true
     quota_savings_alone_when_direct_compliant: forbidden
@@ -202,7 +206,7 @@ routing:
     fresh_session_only_when_task_requires: true
 
   blocked:
-    condition: no compliant route remains after Task, safety, model, capability, independence and economy resolution
+    condition: no compliant route remains
 
   material_dispatch_decision:
     required_fields: [profile, native_dispatch_available, work_suitable_for_native_delegate, selected_route, bypass_reason]

@@ -9,9 +9,9 @@ status:
   update_available_changes_status: false
 
 central_governance:
-  ordinary_version: "0.3.25"
+  ordinary_version: "0.3.27"
   release_schema: "1.0"
-  change_class: fail_closed_model_routing_decision_before_formal_launch
+  change_class: governance_consistency_hardening
   version_path: VERSION
   release_path: GOVERNANCE_RELEASE.yaml
   required_paths:
@@ -20,7 +20,9 @@ central_governance:
     - GOVERNANCE_RELEASE.yaml
     - config/CONFORMANCE_POLICY.yaml
     - config/DISPATCH_POLICY.yaml
+    - config/EXECUTOR_COMPLIANCE.yaml
     - config/MODEL_ROUTING.yaml
+    - config/MODEL_REGISTRY.yaml
     - docs/model-governance/PRIVATE_EVIDENCE_HUB.md
     - templates/PRIVATE_EVIDENCE_HUB_INPUT.json
     - templates/PRIVATE_EVIDENCE_HUB_AGGREGATOR.py
@@ -43,6 +45,7 @@ central_governance:
     - templates/STARTUP_CARD_RENDER.py
     - templates/RESULT.md
     - tests/test_governance_conformance.py
+    - tests/test_runtime_placement_profiles.py
     - tests/test_startup_card_renderer.py
   required_markers:
     config/MODEL_ROUTING.yaml:
@@ -52,6 +55,19 @@ central_governance:
       - "minimum_distinct_sources_per_usable_group: 2"
       - "decision_is_derived_evidence_not_authority: true"
       - "missing_or_invalid_decision_action: BLOCK"
+      - "model_selection_happens_after_execution_surface_resolution: true"
+      - "model_price_tier_provider_may_change_execution_surface: false"
+      - "surface_pool_is_selection_input_not_placement_authority: true"
+      - "custom_model_requires_explicit_surface_pool_membership: true"
+      - "default_model_is_preference_not_pin: true"
+      - "conversation_display_is_not_surface_or_model_authority: true"
+      - "undeclared_noncentral_model_action: BLOCK"
+      - "configured_surface_out_of_pool_action: BLOCK"
+    config/MODEL_REGISTRY.yaml:
+      - "exhaustive_adopter_allowlist: false"
+      - "local_custom_model_gains_central_status: false"
+      - "local_custom_model_gains_cross_project_evidence: false"
+      - "dispatch_or_execution_surface_authority: false"
     docs/model-governance/PRIVATE_EVIDENCE_HUB.md:
       - "PEH state != governance authority"
       - "private cross-project prior < project-local prior"
@@ -73,6 +89,19 @@ central_governance:
       - "policy: web_preferred"
       - "parallel_child_writes_require_pairwise_disjoint_scope: true"
       - "child_review_counts_as_independent_validation: false"
+      - "web_mode_requires_confirmed_github_repository_read_write: true"
+      - "github_native_operations_are_not_agent_placement_triggers: true"
+      - "remote_repository_ci_is_not_local_test_execution: true"
+      - "external_owner_launch_is_provider_and_client_neutral: true"
+      - "preferred_route_order: [current_session, native_dispatch, external_owner_launch, blocked]"
+      - "preferred_route_order: [native_dispatch, current_session, external_owner_launch, blocked]"
+    config/EXECUTOR_COMPLIANCE.yaml:
+      - "scope: special_exact_model_reasoning_compliance_only"
+      - "ordinary_task_semantics_are_owned_elsewhere: true"
+      - "duplicated_ordinary_task_gate_allowed: false"
+      - "duplicated_nested_delegation_policy_allowed: false"
+      - "duplicated_dispatch_decision_policy_allowed: false"
+      - "duplicated_validator_independence_policy_allowed: false"
     docs/context-continuity/TAKEOVER_RECONCILIATION_GATE.md:
       - AWAIT_OWNER_CONTINUE
       - later explicit Owner
@@ -89,6 +118,13 @@ central_governance:
       - "gate_failure_action: BLOCK"
       - Exact running-Task revision binding
       - NEEDS_ATTENTION_OR_REANCHOR_REQUIRED
+      - "required execution surface precedes model selection"
+      - "configured surface pool may not be bypassed by omitting project LOCAL_POLICY"
+      - "nested-delegation defaults are owned only by Dispatch Policy"
+    templates/STARTUP_CARD_RENDER.py:
+      - "formal launch requires explicit project LOCAL_POLICY for surface-pool validation"
+      - "formal launch requires explicit already-resolved execution_surface"
+      - "project LOCAL_POLICY model_bindings section is required for formal launch"
     templates/RESULT.md:
       - executed_exact_task_ref
       - reanchor_used
@@ -111,13 +147,26 @@ central_governance:
       - "no second adoption state store"
       - "upstream feedback sharing is explicit opt-in and never automatic"
       - "no adopter registration"
+      - "five bounded optional choices"
+      - "LOCAL_POLICY.model_bindings"
+    docs/project-adoption/PROJECT_ADOPTION.md:
+      - "surface pool != placement authority"
+      - "local custom eligibility != central qualification"
+      - "default/role preference != exact-model pin"
+      - "GitHub-native 操作本身不构成 Agent placement"
     templates/LOCAL_POLICY.yaml:
       - "upstream_export: false"
       - "automatic_upstream_delivery: false"
+      - "model_bindings:"
+      - "initial_or_material_change_requires_owner_confirmation: true"
     README.md:
       - "navigation and onboarding; it is not a normative protocol"
     docs/protocol/DISPATCH_ROUTING_PROTOCOL.md:
       - "non-authoritative reference guide"
+      - "required_execution_surface_before_model_selection"
+      - "github_native_operation_alone != agent_placement_trigger"
+      - "remote_repository_ci != local_test_execution"
+      - "external_owner_launch != agent_by_definition"
     docs/protocol/SUBAGENT_RELIABILITY_PROTOCOL.md:
       - "non-authoritative principles appendix"
   accepted_0_3_14_replay:

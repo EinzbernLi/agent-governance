@@ -1,11 +1,22 @@
 schema_version: "0.4"
-last_updated: "2026-08-27"
+last_updated: "2026-09-06"
 
 # Model qualification / prior registry.
-# This file answers whether a model is eligible/preferred for a role/task class.
+# This file answers whether a centrally validated/recommended model is eligible/preferred for a role/task class.
+# It is a central catalog, not an exhaustive adopter allowlist. A downstream Owner may declare local-only model
+# eligibility in .agent/LOCAL_POLICY.yaml:model_bindings without adding that model here.
 # It does NOT choose native/external dispatch; that is owned by DISPATCH_POLICY.yaml.
 # Ordinary Tasks default to no nested delegation, so outcomes can normally be attributed to the assigned executor.
 # If material internal delegation is explicitly enabled and used, attribution may fall back to execution-strategy level.
+
+registry_semantics:
+  purpose: recommended_and_validated_default_catalog
+  exhaustive_adopter_allowlist: false
+  downstream_local_custom_model_declaration_path: .agent/LOCAL_POLICY.yaml:model_bindings
+  local_custom_model_gains_central_status: false
+  local_custom_model_gains_cross_project_evidence: false
+  local_custom_model_auto_promotes_globally: false
+  dispatch_or_execution_surface_authority: false
 
 models:
   gpt-5.6-sol:
@@ -92,5 +103,7 @@ models:
 
 invariants:
   - "model_qualification != dispatch_route"
+  - "central_registry != exhaustive_adopter_allowlist"
+  - "local_custom_model_eligibility != central_qualification"
   - "retrospective_evidence != prospective_calibration"
   - "single_project_result_does_not_auto_promote_global_default"

@@ -36,16 +36,21 @@ AI 应先读取治理仓库和目标项目，再只向你展示一次真正会�
    - github_native_notify（推荐）
    - manual_pinned
 
-2. 项目本地模型校准
+2. Web / Agent 本地模型绑定
+   - 确认可用模型池
+   - 可选默认模型与 Lead / Worker / Validator 偏好
+   - 首次或实质变更需 Owner 确认
+
+3. 项目本地模型校准
    - 启用（推荐，数据留在当前项目）
    - 禁用
 
-3. 匿名模型反馈
+4. 匿名模型反馈
    - 不分享（默认）
    - 明确允许生成/提交匿名 aggregate
    - “允许”不等于自动上传
 
-4. LPRL
+5. LPRL
    - 不启用（默认，推荐）
    - 明确启用 Experimental / Preview 测试模块
 ```
@@ -115,6 +120,8 @@ codex_native_subagents
 
 因此“Codex 模式”在文档中只是对 **native-subagent-capable Agent 客户端** 的历史/兼容称呼，不绑定某一家产品；“Web 模式”表示 **non-native-delegating interactive runtime**，也不绑定具体网页产品。
 
+对 GitHub-native 项目，**Web mode 的使用前提是在接入/使用时已经确认该 Web execution surface 具备目标 GitHub repository 所需的 read/write capability**。治理不记录“用了什么插件/供应商”作为长期状态；后续权限或连接失效时按真实 capability fail closed。Issue / PR / branch / commit / review，以及触发或读取 repository CI 等 GitHub-native 操作本身不构成 Agent placement 条件；只有真正依赖目标机器本地文件、workspace、CLI、软件、local test/artifact 或其他远程表面无法访问的状态时才需要 local-capable Agent。
+
 一般偏好是：
 
 ```text
@@ -125,7 +132,7 @@ non-native interactive Lead
 -> lead_direct_preferred
 ```
 
-只有在 Web/non-native Lead **已经确定必须外派**之后，才考虑外部执行面的 placement：需要本机文件系统、workspace、CLI、软件、测试或 artifact 环境的 Task 优先交给 local-capable Agent；纯远程 GitHub/文档验证优先交给独立 Web conversation/session（当独立性或 Task contract 要求时）。
+只有在 Web/non-native Lead **已经确定必须外派**之后，才考虑外部执行面的 placement：需要本机文件系统、workspace、CLI、软件、local test 或 local artifact 环境的 Task 优先交给 local-capable Agent；纯远程 GitHub/文档/remote-CI 工作优先留在 Web execution surface，只有独立性、distinct role 或 Task contract 等更高优先级要求时才需要独立外部会话。
 
 **这条 Web-only placement 不会重分类 native-agent Lead。** native-agent Lead 为了调用自身 native child 覆盖之外的软件而使用 external transport 时，仍保留原来的 native profile，不重新执行 Web placement，也不会被“弹回 Web”。
 
@@ -136,11 +143,13 @@ Canonical dispatch：`config/DISPATCH_POLICY.yaml`。
 ```text
 ONE Active Lead Controller
         ↓
-Durable project state + Model Routing
+Durable project state + Task requirements
         ↓
-Runtime Capability Probe
+Runtime Capability Probe + required execution surface
         ↓
-Task Package
+Model Routing inside that surface
+        ↓
+Task Package / frozen decision
         ↓
 Dispatch Policy
  current_session | native_dispatch | external_owner_launch | blocked
