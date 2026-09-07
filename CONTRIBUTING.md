@@ -3,8 +3,9 @@
 This repository has exactly two product modules: Core Governance and the
 optional Local Resource and Process Lifecycle (LPRL) module. Core Governance
 does not require LPRL, LPRL base operation does not require Core Governance,
-and module presence does not imply loading. LPRL's first-public-release posture
-is Experimental / Preview; production reliance is not currently recommended.
+and module presence does not imply loading. LPRL's current public-release
+posture is Experimental / Preview; production reliance is not currently
+recommended.
 
 When proposing a change or opening a pull request:
 

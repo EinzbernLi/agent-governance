@@ -7,9 +7,9 @@
 This README is navigation and onboarding; it is not a normative protocol.  
 本 README 只负责公开介绍、AI 接入和导航，不重新定义规范。机器可检查的语义归属见 `config/CONFORMANCE_POLICY.yaml`。
 
-## 首次公开版本状态
+## 当前公开版本状态
 
-- Core Governance：**0.3.25**，默认治理能力。
+- Core Governance：**0.3.27**，默认治理能力。
 - LPRL：**0.2.5-pilot · Experimental / Preview · 默认关闭**。
 - Governance Console：随仓库提供的 **optional read-only tooling**，不是产品模块，也不是治理 authority。
 - Private Evidence Hub（PEH）：可选的 private-fork capability；通用方法/模板可公开，用户自己的私有 evidence/config/source list 不公开。
@@ -296,13 +296,14 @@ Conformance Result 是 evidence，不是 action authority，也不是 Lead Accep
 
 ## Public release boundary
 
-公开发行使用 clean public seed：不会把 private Governance Lab 的 `.agent/**`、`.publicization/**`、private `CHANGELOG.md` 或 private Git history 带入公开仓库。公开仓库从 fresh root/history 开始。
+公开发行通过 clean public seed / qualification boundary 生成允许公开的仓库内容，不把 private Governance Lab 的 `.agent/**`、`.publicization/**`、private `CHANGELOG.md` 或 private Git history 带入公开仓库。公开仓库的初始 public root 已经建立；后续发布沿既有公开 Git history 正常前进，不重写已接受的 tag、Release 或历史。
 
-当前首个公开发布身份：
+当前公开发布身份：
 
 ```text
 repository: EinzbernLi/agent-governance
-Core: v0.3.25
+Core: v0.3.27
+public history: v0.3.25 initial root -> v0.3.27 current
 LPRL: 0.2.5-pilot (Experimental / Preview, disabled by default)
 license: Apache-2.0
 ```

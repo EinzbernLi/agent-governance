@@ -1,6 +1,6 @@
 # Local Resource Lifecycle (LPRL)
 
-> **First public release posture: Experimental / Preview.** LPRL has not completed sufficient real-project end-to-end validation, and production use is **not currently recommended**. Inclusion in this repository supports evaluation, design review and controlled experimentation; it is not a production-readiness claim. LPRL remains optional and disabled by default, and module presence does not imply loading.
+> **Current public-release posture: Experimental / Preview.** LPRL has not completed sufficient real-project end-to-end validation, and production use is **not currently recommended**. Inclusion in this repository supports evaluation, design review and controlled experimentation; it is not a production-readiness claim. LPRL remains optional and disabled by default, and module presence does not imply loading.
 
 LPRL is an optional, independently pinned module. It is not part of the Core Governance default surface and is loaded only when a downstream project explicitly enables its accepted LPRL pin.
 
